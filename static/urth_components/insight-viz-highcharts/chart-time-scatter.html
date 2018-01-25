@@ -1,0 +1,117 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+<dom-module id="viz-chart-highcharts-time-scatter">
+  <template>
+    <iframe id="chart"></iframe>
+  </template>
+
+  <script>
+    'use strict';
+    Polymer({
+      is: "viz-chart-highcharts-time-scatter",
+      behaviors: [
+        InsightVizBehaviors.BasicBehavior,
+        InsightVizBehaviors.HighChartsBehavior,
+        InsightVizBehaviors.LoadDataBehavior
+      ],
+      properties: {
+        defaultOptions: {
+          type: Object, readonly: true,
+          value: {
+            chart: {
+                type: 'scatter',
+                zoomType: 'x'
+            },
+            xAxis: {
+                type: 'datetime', 
+            },
+            yAxis: {
+                title: {
+                    text: 'Features'
+                }
+            },
+            legend: {
+                enabled: false
+            },
+            tooltip: {
+                headerFormat: '<b>{series.name}</b><br>',
+                pointFormat: '{point.x:%Y-%m-%d}'
+            },
+            credits: false,
+            series: [{
+            color: 'rgba(223, 83, 83, .5)',
+            data: []
+            }]
+          }//default value
+        }//defaultOptions
+      },//properties
+
+  	  _updateData: function (data) { 
+          var options = {};
+          var seriesdata = [];
+          var aggregatedata = [];
+          var rawdata = [];
+          var rawData = [];
+          var prev;
+          for (var i = 0; i < data.columns.length; i++) {
+              seriesdata.push(new Array());
+              aggregatedata.push(new Array());
+              rawdata.push(new Array());
+              rawData.push(new Array());
+          }
+          for (var i = 0; i < data.data.length; i++) {
+              for (var j = 0; j < data.data[i].length; j++){
+                  if(data.data[i][j]!=null){
+                      seriesdata[j].push({"x":Date.UTC(data.data[i][j].substring(0,10).split("-")[0],data.data[i][j].substring(0,10).split("-")[1]-1,data.data[i][j].substring(0,10).split("-")[2]),"y":j});   
+                  } 
+              }
+          }
+          for ( var i = 0; i < seriesdata.length; i++ ) {
+              for ( var j = 0; j < seriesdata[i].length; j++){
+                if ( seriesdata[i][j].x !== prev ) {
+                    rawdata[i].push(seriesdata[i][j]);
+                    aggregatedata[i].push(1);
+                } else {
+                    aggregatedata[i][aggregatedata[i].length-1]++;
+                }
+                prev = seriesdata[i][j].x;
+              }
+          }
+          for ( var i = 0; i < rawdata.length; i++ ) {
+              for (var j = 0; j < rawdata[i].length; j++){
+                rawData[i].push({"x":rawdata[i][j].x,"y":rawdata[i][j].y,marker:{radius:aggregatedata[i][j],symbol:'circle'}});   
+              } 
+          }
+          var seriesData = [];
+          for(var i = 0; i < rawdata.length; i++){
+              seriesData = seriesData.concat(rawdata[i]);
+          }
+          options['yAxis'] = {
+              categories: data.columns
+          };
+          options['plotOptions'] = {
+            series:{
+            },
+            scatter: {
+            }
+          };
+          options['plotOptions']['series']['turboThreshold'] = data.columns.length;
+          options['plotOptions']['scatter']['turboThreshold']  = seriesData.length;
+          var series = [];
+          for(var i = 0; i < rawData.length; i++) {
+            series.push({
+              name: data.columns[i],
+              color: 'rgba(223, 83, 83, .5)',
+              data: rawData[i],
+              turboThreshold: rawData[i].length
+          });
+          }
+          options['series'] = series;
+          return options;
+  	  }
+    })
+    ;
+  </script>
+</dom-module>

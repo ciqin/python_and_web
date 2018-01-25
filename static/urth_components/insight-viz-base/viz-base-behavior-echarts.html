@@ -1,0 +1,113 @@
+<script src="../requirejs/require.js"></script>
+
+<script>
+    var InsightVizBehaviors = InsightVizBehaviors || {};
+    (function () {
+        'use strict';
+        var requireConfigured;
+        InsightVizBehaviors.EChartsBehavior = {
+            properties: {
+                width: {type: String, value: "800px"},
+                height: {type: String, value: "800px"},
+                defaultOptions: {type: Object, readOnly: true}  //// abstract
+            },//props
+            observers: [
+                //'updateOptions(options.*)',
+                'resize(width, height)'
+            ],//observers
+            created: function () {
+                this.promises = this.promises || [];
+                if (!requireConfigured) {
+                    requirejs.config({
+                        paths: {
+                            echarts: this.resolveUrl('../echarts/dist/echarts.min')
+                        }
+                    });
+                    requireConfigured = true;
+                }
+            },//function created
+            ready: function () {
+                var that = this;
+
+                that.options = new Promise(function (resolve, reject) {
+                    var opt = $.extend(true, {}, that.defaultOptions || {}); //current options or default value
+                    $.extend(opt, that.options);  // Update Options if there is already an user set option.
+                    for (var i = 0; i < that.promises.length; i++)  // Process chained Promises in children elements.
+                        opt = (that.promises[i])(opt);
+                    resolve(opt);
+                });
+                that.options.then(function (options) {
+                    that.$this = $(that);
+                    for (var i = 0; i < that.attributes.length; i++) {  // Update options by dom element attributes 'options-*'
+                        var item = that.attributes[i];
+                        if (item && item.name.startsWith('options-'))   //set options based on attributes starts with `options-`
+                            that._assign({options: options}, item.name.split('-'), item.value);
+                    }
+                    return options;
+                });
+                that.echarts = new Promise(function (resolve, reject) {
+                    require(['echarts'], function (echarts) {
+                        resolve(echarts);
+                    });
+                });
+                that.chart = that.echarts.then(function (echarts) {
+                    var chart = echarts.init(that.$.chart || that.$.echart.$.chart); // Init Echarts
+                    return Promise.resolve(chart);
+                });
+            },//function ready
+            attached: function () {
+                var that = this;
+                Promise.all([this.options, this.chart]).then(function (values) {
+                    var options = values[0], chart = values[1];
+                    chart.setOption(options);
+                    that.resize();
+                });
+            },// function attached
+            updateOptions: function (updateOptions) {
+                if (!updateOptions || updateOptions === "" || updateOptions.length == 0)
+                    return console.error('Error> Update Options to empty value ', updateOptions, ' for element ', this);
+
+                var that = this;
+                Promise.all([that.options, that.chart]).then(function (values) {
+                    var option = values[0], chart = values[1];
+                    if (updateOptions.path && updateOptions.value && Object.keys(updateOptions.value).length) {    //Update an option
+                        var obj = {options: {}};
+                        that._assign(obj, updateOptions.path.split('.'), updateOptions.value);
+                        console.debug('Update options [', updateOptions.path, '] of chart ', that, ' to ', updateOptions.value);
+                        chart.setOption(obj.options, false, true);
+                    } else {  //SETTING AN OPTION OBJECT
+                        console.debug('Update options of chart ', that, ' to ', updateOptions);
+                        // echarts.prototype.setOption = function (option, notMerge=false, lazyUpdate=false) ...
+                        chart.setOption(updateOptions);  // items in updateOptions will be merged into current options
+                    }
+                });
+            },//function updateOptions
+            updateData: function (data) {
+                var that = this;
+                var update = this._updateData(data);
+                if(!update){
+                    console.error('Charts Error> `_updateData()` of this webcomponent should return an Array or Object:', this);
+                    return {'title': {'text': 'Invalid Chart WebComponent, `_update()` should return an Array or Object'}};
+                }
+                update = update.then ? update : Promise.resolve(update);  // ensure update is a Promise
+                update.then(function (updateData) {
+                    if (Object.prototype.toString.call(updateData) === '[object Array]')
+                        updateData = {series: updateData};
+                    that.updateOptions(updateData);
+                });
+            },
+            resize: function (width, height) {
+                if (!this.isAttached) return;
+
+                var div = this.$.chart || this.shadowRoot.getElementById('chart').firstChild;
+                width = width || this.$this.width() || this.width;
+                height = height || this.$this.height() || this.height;
+                div.style.width = (typeof width == 'string' || width instanceof String) ? width : width + 'px';
+                div.style.height = (typeof height == 'string' || height instanceof String) ? height : height + 'px';
+                this.chart.then(function(chart){
+                    chart.resize();
+                });
+            }//function resize
+        };
+    })();
+</script>

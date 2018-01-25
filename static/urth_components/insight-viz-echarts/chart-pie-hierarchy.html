@@ -1,0 +1,160 @@
+﻿<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-echarts.html">
+
+<!--
+Represents a widget that draws a hierarchy pie chart.
+
+Original DataFrame Standard Format:
+--------------------------------------------------------------------------------------
+|  Level_Most_Detailed  |  Level_Less_Detailed  |  ....  |  Level_Highest  |  Value  |
+--------------------------------------------------------------------------------------
+|  Level_A_1            |  Level_B_1            |  ....  |  Level_Z_1      |  0.01   |
+|  Level_A_2            |  Level_B_1            |  ....  |  Level_Z_1      |  0.01   |
+|  Level_A_3            |  Level_B_2            |  ....  |  Level_Z_2      |  0.01   |
+|  Level_A_4            |  Level_B_3            |  ....  |  Level_Z_2      |  0.01   |
+--------------------------------------------------------------------------------------
+
+@group Insight-Viz Chart
+@element chart-pie-hierarchy
+@requires ECharts
+-->
+
+<dom-module id="viz-pie-hierarchy">
+  <template>
+    <div id="chart"></div>
+  </template>
+
+  <script>
+    Polymer({
+      is: "viz-pie-hierarchy",
+      behaviors: [
+        InsightVizBehaviors.BasicBehavior,
+        InsightVizBehaviors.EChartsBehavior,
+        InsightVizBehaviors.LoadDataBehavior
+      ],
+      properties: {
+        defaultOptions: {
+          type: Object, readonly: true,
+          value: {
+            title: {
+              left: 'center',
+              text: 'Hierarchical Pie Chart',
+              subtext: 'Visualization data loading...'
+            }, toolbox: {
+              feature: {
+                saveAsImage: {pixelRatio: 4, title: 'Save Image'},
+                dataView: {readOnly: true, title: 'Data', lang: ['Data View', 'Close', 'Refresh']}
+              }
+            }, tooltip: {
+              trigger: 'item',
+              formatter: "{a}: <br/>{b}, {c} ({d}%)"
+            }, series: [
+              {
+                name: 'Level_A', type: 'pie', selectedMode: 'single', radius: [0, '30%'],
+                label: {normal: {position: 'inner'}},
+                labelLine: {normal: {show: false}},
+                data: [{name: 'Loading_A1', value: 60}, {name: 'Loading_A2', value: 60}]
+              }, {
+                name: 'Level_B', type: 'pie', selectedMode: 'single', radius: ['30%', '65%'],
+                data: [{name: 'Loading_B1', value: 20}, {name: 'Loading_B2', value: 40}, {
+                  name: 'Loading_B3',
+                  value: 60
+                }]
+              }]
+          }//default value
+        }//defaultOptions
+      },//properties
+      _updateData: function (data) {
+        var linspace = function (min, max, idx, total) {
+          total = !total ? 20 : (idx > total ? idx : total);
+          return Math.ceil(min + (max - min) / total * idx);
+        };  //util function
+
+        var trees = [], series = [];
+        var nCols = Math.max(data.columns.length, data.data[0].length),
+            nRows = Math.max(data.index.length, data.data.length);
+        //console.debug('DataFrame size (row*col): ', nRows, '*', nCols);
+
+        //column 0 is most detailed level, columns after that are higher-level categories
+        for (var i = 0; i < nCols - 1; i++) {    //build tress
+          var d = {};    //key: name of this level; value: accumulated numeric
+          for (var j = 0; j < nRows; j++) {
+            var t = data.data[j][i];
+            var child = i > 0 ? data.data[j][i - 1] : undefined;
+            if (!d[t]) d[t] = {name: t, value: 0, children: []};
+            d[t].value += data.data[j][nCols - 1];    //last column is the numeric value
+            if (child) d[t].children.push(child);
+          }
+          trees.push(d);
+
+          var r_in = i * 60.0 / (nCols - 1);
+          var r_out = (i + 1) * 60.0 / (nCols - 1);
+          series.push({   //template for data series
+            data: [],
+            type: 'pie',
+            name: data.columns[i],
+            selectedMode: (i == nCols - 2 ? 'multiple' : 'single'),  //only the most detailed level allow multiple selection
+            selectedOffset: 15,
+            radius: [r_in + "%", r_out + "%"],
+            label: {
+              normal: {
+                position: i == nCols - 2 ? undefined : 'inner'
+              }
+            }
+          });
+        }
+        // console.debug(trees, series);
+
+        for (i = nCols - 2; i >= 0; i--) {    //traverse from the inside to outside (parents to children)
+          var tree = trees[i];    //`tree` corresponds to a level (a donut)
+          var sectors = Object.keys(tree);
+          var level = nCols - 2 - i;
+
+          // Using HSL color space, please refer to: http://www.w3schools.com/colors/colors_hsl.asp
+          var color_map = [];  //this should only be used in the highest level
+          for (var h = 0; h < sectors.length; h++)
+            color_map.push(linspace(0, 360, h, sectors.length));
+
+          j = -1;
+          for (var r in tree) {   //given a level, traverse each sector
+            ++j;
+            var item = tree[r];
+
+            if (!item.color_ref) // this should only happen when level==0
+              item.color_ref = color_map[j];
+            else
+              item.children.forEach(function (x) {
+                trees[i - 1][x].color_ref = item.color_ref;
+              });
+
+            var color = "hsl(" + [
+                  (item.color_ref + 45) % 360,   //H
+                  linspace(100, 80, level, trees.length) + '%', //S
+                  linspace(65, 50, i, level>0 ? Object.keys(trees[i]).length : 1) + '%' //L
+                ].join() + ")";
+            // console.debug(color);
+            var itemStyle = {
+              normal: {
+                color: color,
+                borderColor: '#fff',
+                borderWidth: 1,
+                opacity: 0.8,
+                label: {
+                  show: true,
+                  formatter: '{b}'
+                },
+                labelLine: {show: true}
+              }
+            };  //item style
+            series[nCols - 2 - i].data.push(      //highest level of hierarchy
+                {name: item.name, value: item.value, itemStyle: itemStyle}    //data points
+            );
+          }
+        }
+        return series;
+      }
+    })
+    ;
+  </script>
+</dom-module>

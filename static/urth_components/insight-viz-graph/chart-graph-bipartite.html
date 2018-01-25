@@ -1,0 +1,170 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+
+<!--
+Represents a widget that draws a Bipartite Graph Chart
+
+Original DataFrame Standard Format:
+
+@group Insight-Viz Chart
+@element chart-bipartite-graph
+-->
+
+<dom-module id="viz-chart-graph-bipartite">
+    <template>
+        <style>
+            :host {
+                display: block;
+            }
+
+            canvas {
+                width: 100%;
+                height: 100%;
+            }
+
+            #chart {
+                margin: 0;
+                width: 100%;
+                height: 100%;
+                position: relative;
+            }
+
+            #chart ul.list {
+                position: absolute;
+                padding: 0;
+                top: 50px;
+                color: white;
+                line-height: 40px;
+                text-align: center;
+            }
+
+            #chart ul#list_left {
+                left: 50px;
+            }
+
+            #chart ul#list_right {
+                right: 50px;
+            }
+        </style>
+        <div id="chart" style="width:{{width}}; height:{{height}};">
+            <canvas id="canvas">Please use a latest version of Web Browser that supports Canvas!</canvas>
+            <ul id="list_left" class="list"></ul>
+            <ul id="list_right" class="list"></ul>
+        </div>
+    </template>
+
+    <script>
+        'use strict';
+        Polymer({
+            is: "viz-chart-graph-bipartite",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                width: {type: String},
+                height: {type: String}
+            },//properties
+            observers: [
+                'resize(width, height)'
+            ],//observers
+            ready: function () {
+                this.$left = $(this.$.list_left);
+                this.$right = $(this.$.list_right);
+                var that = this;
+                this.canvas = $(this.$.chart).find('canvas').click(function () {
+                    that.linespace.clearRect(0, 0, this.width, this.height);
+                    for (var t in (that.left || []))
+                        that.__drawLines('left', t, true, 'yellow');
+                });
+                this.linespace = this.canvas[0].getContext('2d');
+            },
+            attached: function () {
+                this.resize();
+                this.canvas.click();
+            },
+            updateData: function (data) {
+                // data schema: DataFrame as split format
+                var that = this;
+                this.matrix = data.data;
+                this.left = data.index;
+                this.right = data.columns;
+
+                var box = function (idx, text, side) {
+                    return $('<li>').attr('data-idx', idx).text(text).click(function () {
+                        that.__drawLines(side, idx);
+                    }).css({
+                        'width': '100px',
+                        'height': '40px',
+                        'background': 'deepskyblue',
+                        'margin-bottom': '40px',
+                        'list-style-type': 'none'
+                    })
+                };
+
+                for (var i in data.index)
+                    this.$left.append(box(i, data.index[i], 'left'));
+                for (var j in data.columns)
+                    this.$right.append(box(j, data.columns[j], 'right'));
+                this.resize();
+                this.canvas.click();
+            },
+            __drawLines: function (side, idx, keep, color) {  //function to draw lines
+                var that = this;
+                var LS = this.linespace, C = this.canvas;
+
+                LS.strokeStyle = color || "red";
+                if (!keep)
+                    LS.clearRect(0, 0, C.width(), C.height());    //clear the canvas
+
+                var xLeft, xRight;
+                if (side == "left") {
+                    xLeft = [this.left[idx]];
+                    xRight = this.right.filter(function (v, i) {
+                        return that.matrix[idx][i];
+                    });
+                } else if (side == "right") {
+                    xRight = [this.right[idx]];
+                    xLeft = this.left.filter(function (v, j) {
+                        return that.matrix[j][idx];
+                    });
+                }
+
+                for (var i = 0; i < xLeft.length; i++) {
+                    var source = this.$left.find("li:contains('" + xLeft[i] + "')");
+
+                    var C_offset = C[0].getBoundingClientRect();
+                    var source_offset = source[0].getBoundingClientRect();
+
+                    var sourceX = source_offset.left + source.width() - C_offset.left;
+                    var sourceY = source_offset.top + 0.5 * source.height() - C_offset.top;
+                    for (var j = 0; j < xRight.length; j++) {
+                        var target = this.$right.find("li:contains('" + xRight[j] + "')");
+
+                        var target_offset = target[0].getBoundingClientRect();
+
+                        var targetX = target_offset.left - C_offset.left;
+                        var targetY = target_offset.top - C_offset.top + target.height() / 2;
+                        //console.debug('Curve>[', LS.strokeStyle, ']', sourceX, sourceY, targetX, targetY);
+
+                        LS.beginPath();
+                        LS.moveTo(sourceX, sourceY);
+                        LS.bezierCurveTo(targetX - targetX / 3, sourceY, sourceX + targetX / 3, targetY, targetX, targetY);
+                        LS.stroke();
+                    }
+                }
+            },
+            resize: function (width, height) {
+                if (!this.isAttached) return;
+                var that = this;
+                var canvas = that.$.canvas || that.shadowRoot.getElementById('canvas').firstChild;
+                width = width || $(that).width() || that.width;
+                height = height || $(that).height() || that.height;
+                if (width && typeof width == 'string') width = width.replace('px', '');
+                if (height && typeof height == 'string') height = height.replace('px', '');
+                $(this.$.chart).css({width: width + 'px', height: height + 'px'});
+                $(canvas).attr('width', width).attr('height', height);
+            }//resize
+        });
+    </script>
+</dom-module>

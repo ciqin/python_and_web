@@ -1,0 +1,203 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+<dom-module id="viz-chart-highcharts-days">
+  <template>
+    <iframe id="chart"></iframe>
+  </template>
+
+  <script>
+    'use strict';
+    Polymer({
+      is: "viz-chart-highcharts-days",
+      behaviors: [
+        InsightVizBehaviors.BasicBehavior,
+        InsightVizBehaviors.HighChartsBehavior,
+        InsightVizBehaviors.LoadDataBehavior
+      ],
+      properties: {
+        defaultOptions: {
+          type: Object, readonly: true,
+          value: {
+            chart: {
+            	type: 'scatter',
+                zoomType: 'x'
+            },
+            xAxis: {
+                title: {
+                    enabled: true,
+                    text: '(days)'
+                },
+                startOnTick: true,
+                endOnTick: true,
+                showLastLabel: true
+            },
+            tooltip: {
+                formatter: function () {
+                    var str = '';
+                    var id = this.key.split('-')[0];
+                    var code = this.key.split('-')[1];
+                    var x = this.x;
+                     return str+='id:'+id +'<br/>code:'+code+',   days:'+x+''
+                }
+            },
+            yAxis: {
+                title: {
+                    text: 'Cases'
+                }
+            },
+            legend: {
+                enabled: false
+            },
+            plotOptions: {
+                series:{
+                    turboThreshold:4767//larger threshold or set to 0 to disable
+                },
+                scatter: {
+                  marker: {
+                      radius: 1,
+                      states: {
+                          hover: {
+                              enabled: true,
+                              lineColor: 'rgb(100,100,100)'
+                          }
+                      }
+                  },
+                  states: {
+                      hover: {
+                          marker: {
+                              enabled: false
+                          }
+                      }
+                  },
+                  tooltip: {
+                      headerFormat: '<b>{point.key}</b><br>',
+                      pointFormat: '{point.x} days, {point.y}'
+                  }
+              }
+            },
+            credits: false,
+            series: [{
+            color: 'rgba(36,157,127, .5)',
+            data: [],
+            marker: {
+                symbol: 'circle',
+                radius: 1
+            }
+            }]
+          }//default value
+        }//defaultOptions
+      },//properties    
+  	  _updateData: function (data) {  	
+          return 1;
+  	  },
+  	  __filter_load:function(){
+  		  var data = this.properties.data;
+  		  var event = this.properties.event;
+  		  var intercaptL = this.properties.interceptLeft;
+  		  var intercaptR = this.properties.interceptRight;
+  		  var seriesData = this.__series_data(data,event,intercaptL,intercaptR);
+	  	  var series = [{
+	            color: 'rgba(36,157,127, .5)',
+	            data: seriesData,
+	            turboThreshold: 0,
+	            marker: {
+	                symbol: 'circle',
+	                radius: 1   
+	            }
+	       }];
+  		  this.chart.then(function (chart) {
+             chart.series[0].update(series[0]);
+          }) 
+  	  },
+      __add_fliter:function(){
+            var data = this.properties.globeData;
+            console.log(data);
+            if(!data) return ;
+            console.log(this.properties.event);
+            console.log(this.properties.limit);
+            var event = this.properties.event=="event"?"":this.properties.event;
+            var limit = this.properties.limit=="limit"?"":this.properties.limit;
+            var dayEnter = this.properties.dayEnter;
+            var newArr = null;
+            limit == "after"? newArr=data.filter(function(d){ return d[2]==event && ( d[1]<dayEnter && d[1]>0 )}):newArr=data.filter(function(d){ return d[2]==event && d[1]>-Math.abs(dayEnter) && d[1]<0 });
+            var arrId =Array.from(new Set(newArr.map(function (d) { return d[0]})));
+            var newData = [];
+            var dataArr = [];
+            for(var i = 0;i<arrId.length;i++){
+                for(var j = 0;j<data.length;j++){
+                    if(arrId[i]===data[j][0]){
+                        newData.push({"name":data[j][0]+"-"+data[j][2], "x":data[j][1],"y":i});
+                        dataArr.push([data[j][0],data[j][1],data[j][2],data[j][3]]) 
+                    }
+                }
+            }
+            var series = [{
+	            color: 'rgba(36,157,127, .5)',
+	            data: newData,
+	            turboThreshold: 0,
+	            marker: {
+	                symbol: 'circle',
+	                radius: 1   
+	            }
+	        }];
+            window.data = dataArr;
+            this.properties.globeData = dataArr;
+            this.chart.then(function (chart) {
+                chart.series[0].update(series[0]);
+             }) 
+             return {
+                 arrIdlength:arrId.length,
+                 dataObj:dataArr 
+             };
+      },   
+  	  __series_data:function( data,event,dataL,dataR){        
+  		var dataId = [];
+		var dataArr = [];
+        var zeroPoint = null;
+	    for(var k in data){
+            dataId.push(k);
+	    	 		for(var i =0 ;i<data[k].length;i++){
+	    	 			 var x = [data[k][i][1].split('/')[2],data[k][i][1].split('/')[0],data[k][i][1].split('/')[1]].join('/');
+                          if(data[k][i][2]===event){
+	    	 				 var dateT = new Date(Date.parse(data[k][i][1]))
+	    	 				 zeroPoint  = dateT.getTime(); 
+	    	 				 if(zeroPoint){
+	 	    	 				dataArr.push(zeroPoint)
+	 	    	 			 }
+                             break;  
+	    	 			 }	
+	    	 		}
+		 } 
+	    var newArray = []
+	    for(var k in data){
+		    	 for(var i =0 ;i<data[k].length;i++){
+		    		 var date = new Date(Date.parse(data[k][i][1])).getTime();
+		    		 data[k][i][1] = date;
+		    		 newArray.push(data[k][i]);
+		 	 }
+ 		 }
+	     var seriesData = []; 
+	     var globeArr = [];
+     	 for(var i = 0;i<dataId.length;i++){
+	    		for (var j = 0; j < newArray.length; j++) {
+	                 if(newArray[j][0] == dataId[i]){
+	                	 	var interval = Math.floor((dataArr[i] - newArray[j][1])/86400000);
+	                	 	globeArr.push([newArray[j][0],interval,newArray[j][2],newArray[j][3]]);
+	                	 	if(-Math.abs(dataL) || dataR){
+	                	 		if(-Math.abs(dataL) && -Math.abs(dataL)>interval) continue;
+	                	 		if(dataR && interval>dataR) continue;
+	                	 	};
+	                    seriesData.push({"name":newArray[j][0]+"-"+newArray[j][2], "x":interval,"y":i});
+	                 }
+	        }
+	     }
+         window.data = globeArr;
+     	 this.properties.globeData = globeArr;
+     	 return seriesData ;
+  	   }
+    })
+    ;
+  </script>
+</dom-module>

@@ -1,0 +1,188 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+
+<dom-module id="viz-chart-highcharts-bar">
+    <template>
+        <style>
+            #selectBox span {
+                font-size: 20px;
+            }
+
+            #selectBox #select {
+                width: 160px;
+                font-weight: 700;
+            }
+        </style>
+        <div id="selectBox">
+            <span>Please select treatment :</span>
+            <select id="select">
+                <option value="CCB"></option>
+                <option value="Statin"></option>
+            </select>
+        </div>
+        <iframe id="chart"></iframe>
+    </template>
+    <script>
+        'use strict';
+        Polymer({
+            is: "viz-chart-highcharts-bar",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readOnly: true,
+                    value: {  // default value to show user some debug information
+                        chart: {
+                            type: 'bar'
+                        },
+                        title: {
+                            text: ''
+                        },
+                        xAxis: {
+                        },
+                        yAxis: {
+                            min: 0,
+                            title: {
+                                text: 'Outcome Occurence Rate(%)',
+                                align: 'high'
+                            },
+                            labels: {
+                                overflow: 'justify'
+                            }
+                        },
+                        plotOptions: {
+                            bar: {
+                                dataLabels: {
+                                    enabled: true,
+                                    allowOverlap: true,
+                                    formatter: function () {
+                                        return (this.y) + "%";
+                                    },
+                                }
+                            }
+                        },
+                        tooltip: {
+                            enabled: false
+                        },
+                        legend: {
+                            layout: 'vertical',
+                            align: 'right',
+                            verticalAlign: 'top',
+                            x: -40,
+                            y: 100,
+                            floating: true,
+                            borderWidth: 1,
+                            backgroundColor: ('#FFFFFF'),
+                            shadow: true
+                        },
+                        credits: {
+                            enabled: false
+                        },
+                        series: []
+                    }//value of default options
+                }//defaultOptions
+            },//properties
+
+            _updateData: function (data) {
+                console.log(data);
+                $("#select option").each(function( i ,v ){
+                    $(v).html(data.index[i*6][0]);
+                })
+                var that = this;
+                var serireColor = ["rgba(166,166,166,1)", "rgba(255,174,76,1)", "rgba(76,166,76,1)"];
+                $("#select").change(function () {
+                    if ($(this).val() === "Statin") {
+                        var categoriesCcbArr = [];
+                        for (var i = 6; i < data.index.length; i++) {
+                            categoriesCcbArr.push(data.index[i][1]);
+                        }
+                        that.chart.then(function (chart) {
+                            chart.xAxis[0].update({
+                                categories: categoriesCcbArr
+                            })
+                        });
+                        var serire = [];
+                        for (var i = 0; i < data.columns.length; i++) {
+                            var serireObj = {};
+                            serireObj.name = data.columns[i];
+                            var serireData = [];
+                            for (var j = 6; j < 12; j++) {
+                                serireData.push((data.data[j][i] * 100).toFixed(1) - 0);
+                            }
+                            serireObj.data = serireData;
+                            serireObj.color = serireColor[i];
+                            serire.push(serireObj);
+                        }
+                        // console.log(statinData);
+                        that.chart.then(function (chart) {
+                            console.log(chart);
+                            chart.update({
+                                series:serire
+                            })
+                        });
+                    } else {
+                        var categoriesCcbArr = [];
+                        for (var i = 0; i < data.index.length; i++) {
+                            categoriesCcbArr.push(data.index[i][1]);
+                        }
+                        that.chart.then(function (chart) {
+                            chart.xAxis[0].update({
+                                categories: categoriesCcbArr
+                            })
+                        });
+                        var serire = [];
+                        for (var i = 0; i < data.columns.length; i++) {
+                            var serireObj = {};
+                            serireObj.name = data.columns[i];
+                            var serireData = [];
+                            for (var j = 0; j < 6; j++) {
+                                serireData.push((data.data[j][i] * 100).toFixed(1) - 0);
+                            }
+                            serireObj.data = serireData;
+                            serireObj.color = serireColor[i];
+                            serire.push(serireObj);
+                        }
+                        // console.log(statinData);
+                        that.chart.then(function (chart) {
+                            console.log(chart);
+                            chart.update({
+                                series:serire
+                            })
+                        });
+
+                    }
+                });
+                var options = {};
+                var categoriesCcbArr = [];
+                for (var i = 0; i < data.index.length; i++) {
+                    categoriesCcbArr.push(data.index[i][1]);
+                }
+                options['xAxis'] = {
+                    categories: categoriesCcbArr,
+                    title: {
+                        text: null
+                    }
+                }
+                var serire = [];
+                for (var i = 0; i < data.columns.length; i++) {
+                    var serireObj = {};
+                    serireObj.name = data.columns[i];
+                    var serireData = [];
+                    for (var j = 0; j < 6; j++) {
+                        serireData.push((data.data[j][i] * 100).toFixed(1) - 0);
+                    }
+                    serireObj.data = serireData;
+                    serireObj.color = serireColor[i];
+                    serire.push(serireObj);
+                }
+                options['series'] = serire
+                return options;
+            }
+        })
+    </script>
+</dom-module>

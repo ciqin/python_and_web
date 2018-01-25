@@ -1,0 +1,432 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+<dom-module id="viz-chart-highcharts-time-line">
+    <template>
+        <style type="text/css">
+            /* Might want to wrap a span around your checkbox text */
+
+            .checkboxtext {
+                /* Checkbox text */
+                width: 20px;
+                height: 10px;
+                display: inline-block;
+                margin-left: 10px;
+            }
+
+            .checkboxicon {
+                /* Checkbox text */
+                width: 20px;
+                height: 10px;
+                display: inline-block;
+                margin-right: 10px;
+            }
+
+            .pagination {
+                border: 1px solid #000 !important;
+            }
+
+            #loadTime {
+                margin-top: 20px !important;
+                margin-left: 20px !important;
+            }
+        </style>
+        <div class="load" style="float:left;">
+            <button id="loadTime" on-tap="__loadTIme_load">loadTime</button>
+            <select name="" id="select">
+                <option value="100">100</option>
+                <option value="500">500</option>
+                <option value="1000">1000</option>
+            </select>
+            <button id="upData" on-tap="__updata">update</button>
+            <button id="ageSort" on-tap="_ageSort">ageSort</button>
+            <button id="eventSort" on-tap="_eventSort">eventSort</button>
+        </div>
+        <div class="page" style="float:right;">
+            <button id="page_left" on-tap="__click_left">&lt</button>
+            <span class="pagination">1</span>
+            <button id="page_right" on-tap="__click_right">&gt</button>
+        </div>
+        <iframe id="chart"></iframe>
+    </template>
+    <script>
+        'use strict';
+        Polymer({
+            is: "viz-chart-highcharts-time-line",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readonly: true,
+                    value: {
+                        chart: {
+                            type: 'scatter',
+                            zoomType: 'x'
+                        },
+                        xAxis: {
+                            type: 'datetime',
+                            labels: {
+                                formatter: function () {
+                                    return Highcharts.dateFormat('%Y-%m-%d', this.value);
+                                }
+                            }
+                        },
+                        yAxis: {
+                            title: {
+                                text: 'Cases'
+                            }
+                        },
+                        legend: {
+                            enabled: false
+                        },
+                        plotOptions: {
+                            series: {
+                                turboThreshold: 3//larger threshold or set to 0 to disable
+                            },
+                            scatter: {
+                                marker: {
+                                    symbol: 'circle',
+                                    radius: 1
+                                },
+                            }
+                        },
+                        tooltip: {
+                            formatter: function () {
+                                var time = this.x
+                                var year = new Date(time).getFullYear();
+                                var month = new Date(time).getMonth() + 1;
+                                var day = new Date(time).getDate();
+                                var newDate = year + '-' + month + '-' + day;
+                                var name = this.key;
+                                var code = null;
+                                /event/g.test(name)? code = name.split(',')[1]:code='code:' + name.split(',')[1]
+                                console.log(name);
+                                var key = 'id:' + name.split(",")[0];
+                                if(name.split(",")[2]){ }
+                                var str = '<b>' + key + '</b><br/><b>' + code + '</b>,     <b>time:  ' + newDate + '</b>';
+                                if(name.split(",")[2]){ str += ',<b>age: '+name.split(",")[2] +' </b>'};
+                                return str;
+                            }
+                        },
+                        credits: false,
+                        series: [{
+                            color: 'rgba(223, 83, 83, .5)',
+                            data: [],
+                            marker: {
+                                symbol: 'circle',
+                                radius: 1
+                            }
+                        }, {
+                            color: 'rgba(119, 152, 191, .5)',
+                            data: [],
+                            marker: {
+                                symbol: 'circle',
+                                radius: 1
+                            }
+                        }]
+                    }//default value
+                }//defaultOptions
+            },//properties
+            ready: function () {
+                var that = this;
+                this.properties.pageNumber = 0;
+                var that = this;
+                $("#select").on("change", function () {
+                    that.properties.count = parseInt($("#select").val());
+                })
+            },
+            __updata() {
+                var that = this;
+                var number = this.properties.number;
+                var count = that.properties.count;
+                if (!this.properties.dataData) {
+                    $.ajax({
+                        url: "//localhost:8001/page",
+                        type: "get",
+                        data: {
+                            pages: 0,
+                            count: count
+                        },
+                        success: function (data) {
+                            $(".pagination").html("1")
+                            var data = that.__data_json(data);
+                            that.__click_load(data)
+                        }
+                    })
+                } else {
+                    var dataObj = this.properties.dataData;
+                    this.properties.pageNumber = 0;
+                    this.
+                        that.__click_load(obj)
+                }
+            },
+            __data_json: function (data) {
+                var jsonData = JSON.parse(data).total_cords;
+                var data = {};
+                data.columns = ["id", "date", "category", "name"];
+                data.data = jsonData;
+                return data;
+            },
+            _updateData: function (data) {
+                if (!data.click) {
+                    this.properties.number = JSON.parse(data).total_count;
+                    var jsonData = JSON.parse(data).total_cords;
+                } else {
+                    var jsonData = data.data;
+                }
+                var data = {};
+                data.columns = ["id", "date", "category", "name"];
+                data.data = jsonData;
+                //compose new array like [[[1387152000000,0],...,[1447286400000,99]],[[1385596800000,0],...,[1385596800000,99]]]
+                var timeData = data.data.filter(function (d) { if (d['3'] != null) { return d } });
+                var groupsArray = Array.from(new Set(data.data.map(function (d) { if (d['3'] != null) { return d['3'] } }).filter(function (d) { return d != undefined })));
+                var casesArray = Array.from(new Set(data.data.map(function (d) { if (d['1'] != null) { return d['1'] } }).filter(function (d) { return d != undefined })));
+                var seriesData = [];
+                var colors = [
+                    "rgba(223, 83, 83, .5)",
+                    "rgba(119, 152, 191, .5)"
+                ];
+                for (var i = 0; i < groupsArray.length; i++) {
+                    var groupsData = [];
+                    for (var j = 0; j < casesArray.length; j++) {
+                        for (var k = 0; k < timeData.length; k++) {
+                            if (timeData[k][1] == casesArray[j] && timeData[k][3] == groupsArray[i]) {
+                                groupsData.push({ "name": timeData[k][1] + "," + timeData[k][4], "x": Date.UTC(timeData[k][2].split("/")[2], timeData[k][2].split("/")[0] - 1, timeData[k][2].split("/")[1]), "y": j });
+                            }
+                        }
+                    }
+                    seriesData.push(groupsData);
+                }
+                this.seriesData = seriesData;
+                this.colors = colors;
+                var series = [];
+                for (var i = 0; i < seriesData.length; i++) {
+                    series.push({
+                        color: colors[i],
+                        data: seriesData[i],
+                        turboThreshold: 0,
+                        marker: {
+                            symbol: 'circle',
+                            radius: 1
+                        }
+                    });
+                }
+                return {
+                    series: series
+                };
+            },
+            __click_left: function () {
+
+                var that = this;
+                var count = this.properties.count;
+                this.properties.pageNumber <= 0 ? this.properties.pageNumber = 0 : this.properties.pageNumber = this.properties.pageNumber - 1;
+                var page = this.properties.pageNumber
+                typeof (count) == "number" ? count : count = 100;
+                $(".pagination").html(page + 1)
+                if (!this.properties.dataData) {
+                    $.ajax({
+                        url: "//localhost:8001/page",
+                        type: "get",
+                        data: {
+                            pages: page,
+                            count: count
+                        },
+                        success: function (data) {
+                            var data = that.__data_json(data);
+                            that.__click_load(data)
+                        }
+                    })
+                } else {
+                    var dataObj = this.properties.dataData;
+                    var leftObj = this.__toggle_btn(dataObj, count, page);
+                    this.__updata_load(leftObj);
+                }
+            },
+            __click_right: function () {
+                var count = this.properties.count;
+                typeof (count) == "number" ? count - 1 : count = 100;
+                var that = this;
+                var maxCount = Math.ceil(that.properties.number / count)
+                if (this.properties.dataData) {
+                    maxCount = Math.ceil(that.properties.dataData.length / count);
+                }
+                that.properties.pageNumber >= maxCount - 1 ? that.properties.pageNumber = maxCount - 1 : that.properties.pageNumber = that.properties.pageNumber + 1;
+                var page = this.properties.pageNumber
+                $(".pagination").html(page + 1);
+                if (!this.properties.dataData) {
+                    $.ajax({
+                        url: "//localhost:8001/page",
+                        type: "get",
+                        data: {
+                            pages: page,
+                            count: count
+                        },
+                        success: function (data) {
+                            var data = that.__data_json(data);
+                            that.__click_load(data)
+                        }
+                    })
+                } else {
+                    var dataObj = this.properties.dataData;
+                    var maxCount = Math.ceil(dataObj.length / count);
+                    if (page >= maxCount) {
+                        page = maxCount
+                    }
+                    var rightObj = this.__toggle_btn(dataObj, count, page);
+                    this.__updata_load(rightObj);
+                }
+            },
+            __toggle_btn(data, count, id) {
+                var obj = {};
+                var concatArr = data.slice(count * id, count * (id + 1));
+                var newArr = [].concat.apply([], concatArr);
+                obj.data = newArr;
+                return obj
+            },
+            __loadTIme_load: function () {
+                var that = this;
+                $(".pagination").html(1);
+                this.properties.pageNumber = 0;
+                this.properties.count = 100;
+                if (!this.properties.dataData) {
+                    $.ajax({
+                        url: "//localhost:8001/page",
+                        type: "get",
+                        data: {
+                            pages: 0,
+                            count: 100
+                        },
+                        success: function (data) {
+                            var data = that.__data_json(data);
+                            that.__click_load(data)
+                            $("#select").children().eq(0).attr("selected", true)
+                        }
+                    })
+                } else {
+                    var dataObj = this.properties.dataData;
+                    var obj = {};
+                    var concatArr = dataObj.slice(0, 100);
+                    var newArr = [].concat.apply([], concatArr);
+                    obj.data = newArr;
+                    that.__click_load(obj)
+                }
+
+            },
+            __handle_series: function (data) {
+                var timeData = data.data.filter(function (d) { if (d['3'] != null) { return d } });
+                var groupsArray = Array.from(new Set(data.data.map(function (d) { if (d['3'] != null) { return d['3'] } }).filter(function (d) { return d != undefined })));
+                var casesArray = Array.from(new Set(data.data.map(function (d) { if (d['0'] != null) { return d['0'] } }).filter(function (d) { return d != undefined })));
+                var seriesData = [];
+                var colors = [
+                    "rgba(223, 83, 83, .5)",
+                    "rgba(119, 152, 191, .5)"
+                ];
+                for (var i = 0; i < groupsArray.length; i++) {
+                    var groupsData = [];
+                    for (var j = 0; j < casesArray.length; j++) {
+                        for (var k = 0; k < timeData.length; k++) {
+                            if (timeData[k][0] == casesArray[j] && timeData[k][3] == groupsArray[i]) {
+                                groupsData.push({ "name": timeData[k][0] + "," + timeData[k][2]+"," + timeData[k][4], "x": Date.UTC(timeData[k][1].split("/")[1], timeData[k][1].split("/")[0] - 1, timeData[k][1].split("/")[1]), "y": j });
+                            }
+                        }
+                    }
+                    seriesData.push(groupsData);
+                }
+                var series = [];
+                for (var i = 0; i < seriesData.length; i++) {
+                    series.push({
+                        color: colors[i],
+                        data: seriesData[i],
+                        turboThreshold: 0,
+                        marker: {
+                            symbol: 'circle',
+                            radius: 1
+                        }
+                    });
+                }
+                return series;
+            },
+            __click_load: function (data) {
+                /* var series = this.__handle_series(data); */
+                data.click = 1;
+                var series = this._updateData(data).series;
+                this.chart.then(function (chart) {
+                    chart.series[0].update(series[0]);
+                })
+            },
+            __updata_load: function (data) {
+                var series = this.__handle_series(data);
+                this.chart.then(function (chart) {
+                    chart.series[0].update(series[0]);
+                })
+            },
+            //  set sort updata function 
+            _ageSort: function () {
+                var data = {};
+                var that = this;
+                data.data =  [].concat.apply([],that.properties.dataData);
+                var series = this.__handle_series(data)
+                this.chart.then(function (chart) {
+                    chart.series[0].update(series[0]);
+                })
+            },
+            _eventSort: function () {
+                var that = this;
+                var data = [].concat.apply([],that.properties.dataData);
+                // console.log(data);
+                var totalObj = {};
+                data.forEach(function( val ,index){
+                    if(!totalObj[val[2]]){
+                        var obj = {};
+                        obj.number = 1;
+                        var arr = [];
+                        var timeArr = [];
+                        arr.push(data[index][0])
+                        timeArr.push(data[index][1])
+                        obj.id = arr;
+                        obj.timeArr = timeArr;
+                        totalObj[val[2]] = obj;
+                        obj.event = val[2];
+                    }else{
+                        totalObj[val[2]].number+=1;
+                        totalObj[val[2]].id.push(data[index][0]);
+                        totalObj[val[2]].timeArr.push(data[index][1])
+                    }
+                });
+                // console.log(totalObj )
+                var newArr = [];
+                for( var val in totalObj ){
+                    newArr.push(totalObj[val]);
+                }
+                newArr.sort(function( a , b){
+                    return  b.number - a.number ;
+                })
+                var seriesData = [];
+                // Date.UTC(val.timeArr[i].split("/")[2], val.timeArr[i].split("/")[0] - 1, val.timeArr[i].split("/")[1])
+                newArr.forEach(function( val ,index ){
+                    for(var i = 0; i< val.id.length;i++){
+                        seriesData.push({'name':val.id[i]+',event:'+val.event,x:Date.UTC(val.timeArr[i].split("/")[2], val.timeArr[i].split("/")[0] - 1, val.timeArr[i].split("/")[1]),y:index})
+                    }
+                })
+                var series = [];
+                series.push({
+                        color: "rgba(223, 83, 83, .5)",
+                        data: seriesData,
+                        turboThreshold: 0,
+                        marker: {
+                            symbol: 'circle',
+                            radius: 1
+                        }
+                    });
+                this.chart.then(function (chart) {
+                    chart.series[0].update(series[0]);
+                })
+
+            }
+        });
+    </script>
+</dom-module>

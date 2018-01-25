@@ -1,386 +1,195 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>增删改查链接数据库</title>
-    <link rel="stylesheet" href="../static/bootstrap/dist/css/bootstrap.min.css">
+    <title>Insight-Viz Charts Gallery</title>
+    <script src="/static/urth_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="/static/urth_components/jquery/dist/jquery.min.js"></script>
+    <script src="/static/urth_components/bootstrap/dist/js/bootstrap.min.js"></script>
+    <link href="/static/urth_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="import" href="/static/urth_components/insight-viz-highcharts/chart-histogram.html">
+    <link rel="import" href="/static/urth_components/insight-viz-highcharts/chart-pie.html">
+    <link rel="import" href="/static/urth_components/insight-viz-highcharts/chart-highcharts-control-node.html">
+    <link rel="import" href="/static/urth_components/insight-viz-highcharts/chart-time-line.html">
+    <link rel="import" href="/static/urth_components/insight-viz-general/insight-viz-general.html">
+    <link rel="import" href="/static/urth_components/insight-viz-control/insight-viz-control.html">
+
     <style>
-        body,
-        table {
-            font-size: 12px;
+        body {
+            padding-top: 80px;
+        }
+       
+		.navbar{
+			height:80px;
+	    		display:flex;
+	    		background:url("/static/image/header-bk.png")  repeat;
+	    }
+	    .logo{
+			flex: 0 0 240px;
+			padding-top: 15px;
+			padding-left:60px;
+		} 
+	    .control-right{
+	    		height:100%;
+	    		flex:1;
+	    		display:flex;
+	    }
+        .insight-viz-chart {
+            float: left;
+            min-height: 600px !important;
+            margin-bottom: 20px;
         }
 
-        li {
-            list-style: none;
+        button {
+            outline-style: none;
+            border-radius: 5px;
+            border: 0px;
+            border: 1px solid rgba(7,17,27,0.1);
+        }
+        .tables td {
+            border-bottom: 1px solid #000;
+            border-right: 1px solid #000;
         }
 
-        table {
-            table-layout: fixed;
-            empty-cells: show;
-            border-collapse: collapse;
-            margin: 0 auto;
+        .chartData button {
+            width: 150px;
+            height: 40px;
         }
 
-        td {
-            height: 20px;
+        .chartData {
+            position: relative;
+            margin-top:40px;
+            padding-left: 60px;
         }
 
-        h1,
-        h2,
-        h3 {
-            font-size: 12px;
-            margin: 0;
-            padding: 0;
+        .ageBox,.genderBox {
+            width: 100%;
+            position: absolute;
+            left: 0px;
+            top: 45px;
         }
-
-        .title {
-            background: #FFF;
-            border: 1px solid #9DB3C5;
-            padding: 1px;
-            width: 90%;
-            margin: 20px auto;
+         .ageBox{
+         	left: -10000px;
+         }
+        .content{
+        		display:flex;
         }
-
-        .title h1 {
-            line-height: 31px;
-            text-align: center;
-            background: #2F589C url(th_bg2.gif);
-            background-repeat: repeat-x;
-            background-position: 0 0;
-            color: #FFF;
+       .main-right{
+        		flex:1;
         }
-
-        .title th,
-        .title td {
-            border: 1px solid #CAD9EA;
-            padding: 5px;
+        .main-right .title{
+        		height:40px;
+        		line-height:40px;
+        		display:flex;
+        		text-align:center;
+        		margin-top:-5px;
+        		margin-bottom: 8px;
+        		border-bottom:1px solid rgba(7,17,27,0.1);
         }
-
-        /*这个是借鉴一个论坛的样式*/
-
-        table.t1 {
-            border: 1px solid #cad9ea;
-            color: #666;
+        .main-right .title .desc,.main-right .title .caseCount{
+        		flex:1;
         }
-
-        table.t1 th {
-            background-image: url(th_bg1.gif);
-            background-repeat: repeat-x;
-            height: 30px;
+        .sidebar-left{
+        		flex: 0 0 260px;
         }
-
-        table.t1 td,
-        table.t1 th {
-            border: 1px solid #cad9ea;
-            padding: 0 1em 0;
+        .filtercontral{
+        		display:flex;
+        		
         }
-
-        table.t1 tr.a1 {
-            background-color: #f5fafe;
+        .filtercontral .cludeCon{
+        		flex:0 0 40px;
+        		padding: 0 10px 0 20px;
+        		box-sizing:border-box;
+        		height:100%;
+        		line-height:20px;
         }
-
-        table.t2 {
-            border: 1px solid #9db3c5;
-            color: #666;
-        }
-
-        table.t2 th {
-            background-image: url(th_bg2.gif);
-            background-repeat: repeat-x;
-            height: 30px;
-            color: #fff;
-        }
-
-        table.t2 td {
-            border: 1px dotted #cad9ea;
-            padding: 0 2px 0;
-        }
-
-        table.t2 th {
-            border: 1px solid #a7d1fd;
-            padding: 0 2px 0;
-        }
-
-        table.t2 tr.a1 {
-            background-color: #e8f3fd;
-        }
-
-        table.t3 {
-            border: 1px solid #fc58a6;
-            color: #720337;
-        }
-
-        table.t3 th {
-            background-image: url(th_bg3.gif);
-            background-repeat: repeat-x;
-            height: 30px;
-            color: #35031b;
-        }
-
-        table.t3 td {
-            border: 1px dashed #feb8d9;
-            padding: 0 1.5em 0;
-        }
-
-        table.t3 th {
-            border: 1px solid #b9f9dc;
-            padding: 0 2px 0;
-        }
-
-        table.t3 tr.a1 {
-            background-color: #fbd8e8;
-        }
-
-        .modal-body ul li {
-            display: inline-block;
-        }
+         .filtercontral .cludeCon button{
+         	height:50%;
+         	line-height:50%;
+         	font-size:12px;
+         	width: 100%;
+         }
+		.filtercontral .cludeCon button:hover{
+			background:rgba(7,17,27,0.1)
+		}
+		#help-left ul{
+			list-style:none;
+			padding:0px;
+		}
+		#help-left ul li a{
+			width:100%;
+			text-align:center;
+			cursor: pointer;
+			color: #333;
+		}
+		#help-left ul li:nth-child(1) a{
+			background:rgba(7,17,27,0.1);
+		}
     </style>
+</head>
 
-    <head>
-
-        <body>
-            <table width="100%" id="mytab" border="1" class="t1">
-                <thead>
-                    <th width="10%">网名</th>
-                    <th width="20%">博客</th>
-                    <th width="20%">电邮</th>
-                    <th width="20%">网络硬盘</th>
-                    <th width="10%">QQ</th>
-                    <th width="20%">操作</th>
-                </thead>
-            </table>
-            <div class="modal fade" id="addMyModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <ul>
-                                <li>
-                                    <span>姓名:</span>
-                                    <input type="text" class="name">
-                                </li>
-                                <li>
-                                    <span>博客:</span>
-                                    <input type="text" class="blog">
-                                </li>
-                                <li>
-                                    <span>电邮:</span>
-                                    <input type="text" class="email">
-                                </li>
-                                <li>
-                                    <span>硬盘:</span>
-                                    <input type="text" class="address">
-                                </li>
-                                <li>
-                                    <span>QQ</span>
-                                    <input type="text" class="qq">
-                                </li>
-                            </ul>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal" id="add">添加</button>
-                        </div>
-                    </div>
-                </div>
+<body>
+	<nav class="navbar navbar-inverse navbar-fixed-top">
+        <div class="logo clearfix">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#">InsightViz Gallery</a>
             </div>
-            <div class="modal fade" id="selectMyModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            确定要删除吗？
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal" id="delete">确定</button>
-                            <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal fade" id="reviseMyModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <ul>
-                                <li>
-                                    <span>姓名:</span>
-                                    <input type="text" class="name">
-                                </li>
-                                <li>
-                                    <span>博客:</span>
-                                    <input type="text" class="blog">
-                                </li>
-                                <li>
-                                    <span>电邮:</span>
-                                    <input type="text" class="email">
-                                </li>
-                                <li>
-                                    <span>硬盘:</span>
-                                    <input type="text" class="address">
-                                </li>
-                                <li>
-                                    <span>QQ</span>
-                                    <input type="text" class="qq">
-                                </li>
-                            </ul>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal" id="revise">revise</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </body>
-        <script src="../static/jquery/dist/jquery.js"></script>
-        <script src="../static/bootstrap/dist/js/bootstrap.min.js"></script>
-        <script>
-            $.ajax({
-                url: "/load",
-                type: "get",
-                success: function (data) {
-                    data.data.forEach(function (val, index) {
-                        var str = addStr(val);
-                        $(".t1").append(str);
-
-                    })
-                    $(".a1 .delete").each(function (index, val) {
-                        $(this).click(function () {
-                            var name = $(this).parent().parent().children().eq(0).html()
-                            $("#selectMyModal").attr("index", index)
-                            $("#selectMyModal").attr("data-name", name)
-                        })
-                    })
-                    $(".a1 .revise").each(function (index, val) {
-                        $(this).click(function () {
-                            var that = this;
-                            setAttr(that,index);
-                        })
-                    })
-                }
-            })
-            $("#add").click(function () {
-                var name = $("#addMyModal .modal-body li input").eq(0).val();
-                var blog = $("#addMyModal .modal-body li input").eq(1).val();
-                var email = $("#addMyModal .modal-body li input").eq(2).val();
-                var address = $("#addMyModal .modal-body li input").eq(3).val();
-                var qq = $("#addMyModal .modal-body li input").eq(4).val();
-                var arr = [name, blog, email, address, qq];
-                var str = addStr(arr);
-                $(".t1").append(str);
-                $.ajax({
-                    url: "/add",
-                    data: {
-                        name: name,
-                        blog: blog,
-                        email: email,
-                        address: address,
-                        qq: qq
-                    },
-                    type: "get",
-                    success(data) {
-                        $(".a1 .delete").each(function (index, val) {
-                            $(this).click(function () {
-                                var name = $(this).parent().parent().children().eq(0).html()
-                                $("#selectMyModal").attr("index", index)
-                                $("#selectMyModal").attr("data-name", name)
-                            })
-                        })
-                        $(".a1 .revise").each(function (index, val) {
-                            $(this).click(function () {
-                                var that = this;
-                                setAttr(that,index);
-                            })
-                        })
-                    }
-                })
-            })
-            $("#delete").click(function () {
-                var index = parseInt($("#selectMyModal").attr("index"));
-                var name = $("#selectMyModal").attr("data-name")
-                $(".a1").eq(index).remove();
-                $.ajax({
-                    url: "/delete",
-                    type: "get",
-                    data: { name: name },
-                    success(data) {
-
-                    }
-                })
-            })
-            $("#revise").click(function () {
-                var name = $("#reviseMyModal .modal-body li input").eq(0).val();
-                var blog = $("#reviseMyModal .modal-body li input").eq(1).val();
-                var email = $("#reviseMyModal .modal-body li input").eq(2).val();
-                var address = $("#reviseMyModal .modal-body li input").eq(3).val();
-                var qq = $("#reviseMyModal .modal-body li input").eq(4).val();
-                var DataIndex = parseInt($("#reviseMyModal").attr("index"));
-                $.ajax({
-                    url: "/revise",
-                    data: {
-                        name: name,
-                        blog: blog,
-                        email: email,
-                        address: address,
-                        qq: qq
-                    },
-                    type: "get",
-                    success(data) {
-                        $("#mytab .a1").eq(DataIndex).children().eq(0).html(name);
-                        $("#mytab .a1").eq(DataIndex).children().eq(1).html(blog)
-                        $("#mytab .a1").eq(DataIndex).children().eq(2).html(email)
-                        $("#mytab .a1").eq(DataIndex).children().eq(3).html(address )
-                        $("#mytab .a1").eq(DataIndex).children().eq(4).html(qq)
-                    }
-                })
-            })
-            // add str function
-            function addStr(array) {
-                var str = '<tr class="a1">';
-                array.forEach(function (v, i) {
-                    str += '<td>' + v + '</td>'
-                })
-                str += `<td>
-                        <a href="#" javascript: data-toggle="modal" data-target="#addMyModal" class="add">增加</a>
-                        <a href="#" javascript: data-toggle="modal" data-target="#selectMyModal" class="delete">删除</a>
-                        <a href="#" javascript: data-toggle="modal" data-target="#reviseMyModal" class="revise">修改</a>
-                    </td></tr>`
-                return str
-            }
-            // add attr 
-            function setAttr( element ,index) {
-                var name = $(element).parent().parent().children().eq(0).html();
-                var blog = $(element).parent().parent().children().eq(1).html()
-                var email = $(element).parent().parent().children().eq(2).html()
-                var addredd = $(element).parent().parent().children().eq(3).html()
-                var QQ = $(element).parent().parent().children().eq(4).html()
-                $("#reviseMyModal").attr("index", index)
-                $("#reviseMyModal").attr("data-name", name)
-                $("#reviseMyModal .modal-body li input").eq(0).val(name)
-                $("#reviseMyModal").attr("data-blog", blog)
-                $("#reviseMyModal .modal-body li input").eq(1).val(blog)
-                $("#reviseMyModal").attr("data-email", email)
-                $("#reviseMyModal .modal-body li input").eq(2).val(email)
-                $("#reviseMyModal").attr("data-addredd", addredd)
-                $("#reviseMyModal .modal-body li input").eq(3).val(addredd)
-                $("#reviseMyModal").attr("data-QQ", QQ)
-                $("#reviseMyModal .modal-body li input").eq(4).val(QQ)
-            }
-        </script>
+	    </div>
+	 </nav>
+	 <div class="content">
+	 	  <div class="sidebar-left">
+	 	  	<viz-general></viz-general>
+	 	  </div>
+	 	  <div class="main-right">
+	 	  		 <main class="container-fluid">
+			        <div class="row">
+			            <div class="col-md-6">
+			            		<div class="chart-time clearfix">
+			                    <viz-chart-highcharts-time-line id='p3' class='insight-viz-chart col-md-12' style="height:400px;" options-title-text="EHR Cohort Construction"
+			                        options-subtitle-text="Click and drag in the plot area to zoom in" src-bind='page' src-url='//localhost:8001/{bind}?pages=0&count=100'>
+			                    </viz-chart-highcharts-time-line>
+			                </div>
+			            </div>
+			            <div class="col-md-6">
+								<div class="chartData">
+				                    <button>Age</button>
+				                    <button>Gender</button>
+				                    <div class="ageBox">
+				                        <viz-chart-highcharts-histogram id='p1' class='insight-viz-chart col-md-12' style='width:96%;height:460px;' options-title-text=''
+				                            options-subtitle-text='' src-bind='piegender' src-url='//localhost:8001/{bind}'>
+				                        </viz-chart-highcharts-histogram>
+				                    </div>
+				                    <div class="genderBox">
+				                        <viz-chart-highcharts-pie id='p2' class='insight-viz-chart col-md-12' options-title-text='Gender' src-bind='piegender' src-url='//localhost:8001/{bind}'
+				                            style="height:440px;">
+				                        </viz-chart-highcharts-pie>
+				                    </div>
+				                </div>
+			            </div>
+			        </div>
+			    </main>
+			    <!-- /.container -->
+	 	  </div>
+	</div>
+</body>
+<script>
+    $(".chartData button").eq(0).click(function () {
+        $(".ageBox").css({
+            "left": "0px"
+        });
+        $(".genderBox").css({
+            "left": "-10000px"
+        })
+    })
+    $(".chartData button").eq(1).click(function () {
+        $(".ageBox").css({
+            "left": "-10000px"
+        });
+        $(".genderBox").css({
+            "left": "0px"
+        })
+    })
+</script>
 
 </html>

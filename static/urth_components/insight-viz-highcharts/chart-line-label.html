@@ -1,0 +1,131 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+<dom-module id="viz-chart-highcharts-line-label">
+  <template>
+<input class="test" id="g1" type="radio" value="b" on-tap="__update_line" checked>&nbsp;&nbsp;Normal&nbsp;&nbsp;</input>
+<input class="test" id="g2" type="radio" value="a" on-tap="__update_line">&nbsp;&nbsp;Accumulated&nbsp;&nbsp;</input>
+
+    <iframe id="chart"></iframe>
+  </template>
+
+  <script>
+    'use strict';
+    Polymer({
+      is: "viz-chart-highcharts-line-label",
+      behaviors: [
+        InsightVizBehaviors.BasicBehavior,
+        InsightVizBehaviors.HighChartsBehavior,
+        InsightVizBehaviors.LoadDataBehavior
+      ],
+      properties: {
+        defaultOptions: {
+          type: Object, readonly: true,
+          value: {
+            chart: {
+                type: 'line'
+            },
+            credits: false,
+            xAxis: {
+                categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+            },
+            yAxis: {
+                title: {
+                    text: null
+                }
+            },
+            plotOptions: {
+                line: {
+                    dataLabels: {
+                        enabled: true
+                    },
+                    enableMouseTracking: false
+                }
+            },
+          //   legend: {
+          //       layout: 'vertical',
+          //       align: 'right',
+          //       x: 50,
+          //       verticalAlign: 'top',
+          //       y: 100,
+          //       reversed: true,
+          //       floating: true,
+		        //     backgroundColor: '#FFFFFF'
+		        // },
+            series: [{
+            }, {
+            },{
+            }, {
+            }]
+          }//default value
+        }//defaultOptions
+      },//properties
+  	  _updateData: function (data) {
+        var normalData = data.data;
+
+        //treat with data in string format
+        normalData = normalData.map(function(arry){
+          arry = arry.map(function(d){
+            return +d;
+          });
+          return arry;
+        });
+
+        var accumulatedData = [];
+        for (var i = 0; i < normalData.length; i++) {    
+          var normal_array = normalData[i];    
+          var accumulated_array = [];
+          normal_array.reduce(function(a,b,i) { 
+            return accumulated_array[i] = a+b; 
+          }, 0);
+          accumulatedData.push(accumulated_array);
+        }
+
+        this.normalSeries = data.index.map(function(rowname, i){
+          return {
+            name: rowname,
+            data: normalData[i]
+          }
+        });
+
+        this.accumulatedSeries = data.index.map(function(rowname, i){
+          return {
+            name: rowname,
+            data: accumulatedData[i]
+          }
+        });
+
+        var options = {};      
+
+        this.chartName =  data.index;
+
+        options['xAxis'] = {
+          categories: data.columns
+        };
+  		  options['series'] = this.normalSeries;
+        return options;
+  	  },
+
+      __update_line: function (e) {
+        if(e.target.id=='g1'){
+          var seriesData = this.normalSeries;
+          this.$$('#g1').checked = true;
+          this.$$('#g2').checked = false;
+        }else if (e.target.id=='g2'){ 
+          var seriesData = this.accumulatedSeries;
+          this.$$('#g1').checked = false;
+          this.$$('#g2').checked = true;
+        }
+        if(e.target.id=='g1' || e.target.id=='g2'){
+          this.chart.then(function (chart) {
+            chart.update({
+              series: seriesData
+            });
+          });
+        }
+      }// __update_line
+    })
+    ;
+  </script>
+</dom-module>

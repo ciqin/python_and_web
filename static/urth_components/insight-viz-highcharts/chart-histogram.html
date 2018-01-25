@@ -1,0 +1,288 @@
+﻿<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+<dom-module id="viz-chart-highcharts-histogram">
+    <template>
+        <div style="display: inline-block; margin-left: 50px;"></div>
+        <label>Interval:</label>
+        <div style="display: inline-block; margin-left: 10px;"></div>
+        <input type="text" style="width:50px;" id="interval">
+        <input type="button" value="Update" id="btn" on-tap="__update_interval">
+        <iframe id="chart"></iframe>
+    </template>
+
+    <script>
+        $(function () {
+            /**
+             * Get histogram data out of xy data
+             * @param   {Array} data  Array of tuples [x, y]
+             * @param   {Number} step Resolution for the histogram
+             * @param   {Number} numeric (false:not numeric,true:numeric)       
+             * @param   {Number} min min element of array         
+             * @returns {Array}       Histogram data
+             */
+            function histogram(data, step, numeric, min) {
+                var histo = {},
+                    x,
+                    i,
+                    arr = [];
+                // Group down
+                for (i = 0; i < data.length; i++) {
+                    if (numeric) {
+                        if (!Number.isInteger(min)) {
+                            x = (Math.floor(data[i] / step) * step).toFixed(2);
+                        } else {
+                            x = Math.floor(data[i]/ step) * step;
+                        }
+                    } else {
+                        x = new Date(min + Math.floor((data[i]- min) / (step * 24 * 3600 * 1000)) * (step * 24 * 3600 * 1000));
+                        var theyear = x.getFullYear();
+                        var themonth = x.getMonth() + 1;
+                        var theday = x.getDate();
+                        if (themonth >= 1 && themonth <= 9) {
+                            themonth = "0" + themonth;
+                        }
+                        if (theday >= 0 && theday <= 9) {
+                            theday = "0" + theday;
+                        }
+                        x = theyear + "/" + themonth + "/" + theday;
+                    }
+                    if (!histo[x]) {
+                        histo[x] = 0;
+                    }
+                    histo[x]++;
+                }
+                // Make the histo group into an array
+                for (x in histo) {
+                    if (histo.hasOwnProperty((x))) {
+                        if (numeric) {
+                            arr.push([+x, histo[x]]);
+                        } else {
+                            arr.push([x, histo[x]]);
+                        }
+                    }
+                }
+
+                if (numeric) {
+                    // Finally, sort the array
+                    arr.sort(function (a, b) {
+                        return a[0] - b[0];
+                    });
+                } else {
+                    arr.sort(function (a, b) {
+                        a[0] = a[0].split('/').join('');
+                        b[0] = b[0].split('/').join('');
+                        return a[0] > b[0] ? 1 : a[0] < b[0] ? -1 : 0;
+                    });
+                }
+                return arr;
+            }
+
+            'use strict';
+            Polymer({
+                is: "viz-chart-highcharts-histogram",
+                behaviors: [
+                    InsightVizBehaviors.BasicBehavior,
+                    InsightVizBehaviors.HighChartsBehavior,
+                    InsightVizBehaviors.LoadDataBehavior
+                ],
+                properties: {
+                    defaultOptions: {
+                        type: Object, readonly: true,
+                        value: {
+                            chart: {
+                                type: 'column'
+                            },
+                            yAxis: [{
+                                title: {
+                                    text: ''
+                                }
+                            }],
+                            credits: false,
+                            series: [{
+                            }]
+                        }//default value
+                    }//defaultOptions
+                },//properties
+                _updateData: function (data) {
+                    var jsonData = JSON.parse(data);
+                    var data = {};
+                    data.columns = ["age"];
+                    data.data = jsonData.list_age;
+                    var max;
+                    var min;
+                    var interval;
+                    var numeric;
+                    var columnName = data.columns[0];
+                    var seriesData = data.data.filter(function (d) { if (d != null) { return d } });
+                    var uniqueArray = Array.from(new Set(seriesData.map(function (d) { return d })));
+                    var dataType = seriesData[0];              
+                    if (isNaN(dataType)) {
+                        var groupsArray = Array.from(new Set(seriesData.map(function (d) { return d.substring(0, 4) })));
+                        this.groupsArray = groupsArray;
+                        for (var i = 0; i < seriesData.length; i++) {
+                            if (dataType.length == 10 && groupsArray.length == 1) {
+                                var result = seriesData[i][0].match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+                                seriesData[i] = Date.UTC(result[1], result[3] - 1, result[4]);
+                            } else {
+                                seriesData[i] = parseInt(seriesData[i].substring(0, 10));
+                            }
+                        }
+                    }
+                    if (!isNaN(dataType) && !Number.isInteger(dataType)) {
+                        max = Math.max.apply(null, seriesData).toFixed(1);//lowest data value
+                        min = Math.min.apply(null, seriesData).toFixed(1);//highest data value
+                        interval = (max - min) / 10; //total range of the data
+                        this.$$("#interval").value = interval.toFixed(2);
+                        numeric = true;
+                    } else {
+                        // var arr = seriesData.slice(0,10000);
+                        var count = Math.ceil(seriesData.length/10000);
+                        var maxArr = [];
+                        var minArr = [];
+                        for(var i = 0;i<count; i++){
+                            if(i<=count-1){
+                                maxArr.push(Math.max.apply(null, seriesData.slice(i*10000,(i+1)*10000)));
+                                minArr.push(Math.min.apply(null, seriesData.slice(i*10000,(i+1)*10000)));
+                            }
+                        }
+                        max = Math.max.apply(null, maxArr);//lowest data value
+                        min = Math.min.apply(null, minArr);//highest data value
+                        if (isNaN(dataType) && dataType.length == 10 && groupsArray.length == 1) {
+                            interval = Math.round(Math.abs(max - min) / (1000 * 60 * 60 * 24) / 10);
+                        } else {
+                            interval = Math.round((max - min) / 10); //total range of the data
+                            if (interval == 0) {
+                                interval = 1;
+                            }
+                            numeric = true;
+                        }
+                        this.$$("#interval").value = interval;
+                    }
+                    this.columnName = columnName;
+                    this.interval = interval;
+                    this.birthData = seriesData;
+                    this.numeric = numeric;
+                    this.min = min;
+                    this.max = max;
+                    this.uniqueArray = uniqueArray;
+                    var binnedRawData = histogram(seriesData, interval, numeric, min);
+                    var type;
+                    var series;
+                    if (!numeric) {
+                        var seriesArray = [];
+                        for (var i = 0; i < binnedRawData.length; i++) {
+                            var timeArray = [];
+                            timeArray.push(Date.UTC(parseInt(binnedRawData[i][0].substring(0, 4)), binnedRawData[i][0].substring(4, 6) - 1, parseInt(binnedRawData[i][0].substring(6, 8))));
+                            timeArray.push(binnedRawData[i][1]);
+                            seriesArray.push(timeArray);
+                        }
+                        type = 'datetime';
+                        interval = interval * 24 * 3600 * 1000;
+                        series = [{
+                            name: columnName,
+                            type: 'column',
+                            data: seriesArray,
+                            pointStart: seriesArray[0],
+                            pointInterval: interval,
+                            pointPadding: 0,
+                            groupPadding: 0,
+                            pointPlacement: 'between',
+                            tooltip: {
+                                headerFormat: '<b>' + columnName + '</b><br>',
+                                pointFormat: '{point.x:%Y-%m-%d}, {point.y}'
+                            }
+                        }]
+                            ;
+                    } else {
+                        type = 'linear';
+                        series = [{
+                            name: columnName,
+                            type: 'column',
+                            data: binnedRawData,
+                            pointInterval: interval,
+                            pointPadding: 0,
+                            groupPadding: 0,
+                            pointPlacement: 'between',
+                            tooltip: {
+                                headerFormat: '<b>' + columnName + '</b><br>',
+                                pointFormat: '{point.x}, {point.y}'
+                            }
+                        }]
+                            ;
+                    }
+                    var options = { series: series, xAxis: { type: type, tickmarkPlacement: 'between', tickInterval: interval, gridLineWidth: 1 } };
+
+                    if (data.columns.length > 0) {
+                        options['title'] = {};
+                        options['title']['text'] = data.columns[0];
+                    }
+                    return options;
+                },
+                __update_interval: function (e) {
+                    var interval = this.$$("#interval").value;
+                    var columnName = this.columnName;
+                    var numeric = this.numeric;
+                    if (interval.length == 0 || parseFloat(interval) > parseFloat(this.max) || this.uniqueArray.length == 1) {
+                        interval = this.interval;
+                        this.$$("#interval").value = interval;
+                    }
+                    if (Number.isInteger(this.interval)) {
+                        interval = parseInt(interval);
+                    } else {
+                        interval = parseFloat(interval);
+                    }
+                    var binnedData = histogram(this.birthData, interval, this.numeric, this.min);
+                    var type;
+                    var series;
+                    if (!numeric) {
+                        var seriesArray = [];
+                        for (var i = 0; i < binnedData.length; i++) {
+                            var timeArray = [];
+                            timeArray.push(Date.UTC(parseInt(binnedData[i][0].substring(0, 4)), binnedData[i][0].substring(4, 6) - 1, parseInt(binnedData[i][0].substring(6, 8))));
+                            timeArray.push(binnedData[i][1]);
+                            seriesArray.push(timeArray);
+                        }
+                        type = 'datetime';
+                        interval = interval * 24 * 3600 * 1000;
+                        series = {
+                            name: columnName,
+                            type: 'column',
+                            data: seriesArray,
+                            pointStart: seriesArray[0],
+                            pointInterval: interval,
+                            pointPadding: 0,
+                            groupPadding: 0,
+                            pointPlacement: 'between',
+                            tooltip: {
+                                headerFormat: '<b>' + columnName + '</b><br>',
+                                pointFormat: '{point.x:%Y-%m-%d}, {point.y}'
+                            }
+                        }
+                            ;
+                    } else {
+                        type = 'linear';
+                        series = {
+                            name: columnName,
+                            type: 'column',
+                            data: binnedData,
+                            pointInterval: interval,
+                            pointPadding: 0,
+                            groupPadding: 0,
+                            pointPlacement: 'between',
+                            tooltip: {
+                                headerFormat: '<b>' + columnName + '</b><br>',
+                                pointFormat: '{point.x}, {point.y}'
+                            }
+                        }
+                            ;
+                    }
+                    this.chart.then(function (chart) {
+                        chart.xAxis[0].update({ type: type, tickmarkPlacement: 'between', tickInterval: interval, gridLineWidth: 1 }, true);
+                        chart.series[0].update(series);
+                    })
+                }// __update_interval
+            });
+        });
+    </script>
+</dom-module>

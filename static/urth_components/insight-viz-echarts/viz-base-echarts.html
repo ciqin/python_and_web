@@ -1,0 +1,43 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-echarts.html">
+
+
+<dom-module id="chart-base-echart">
+  <template>
+    <div id="chart"></div>
+  </template>
+  <script>
+    'use strict';
+    Polymer({
+      is: "chart-base-echart",
+      behaviors: [
+        InsightVizBehaviors.BasicBehavior,
+        InsightVizBehaviors.EChartsBehavior,
+        InsightVizBehaviors.LoadDataBehavior
+      ],
+      properties: {
+        defaultOptions: {
+          type: Object, readOnly: true,
+          value: {  // default value to show user some debug information
+            title: {
+              left: 'center',
+              text: 'Data not loaded for charting...',
+              subtext: 'ECharts WebComponent'
+            }, toolbox: {
+              feature: {
+                saveAsImage: {pixelRatio: 4, title: 'Save Image'},
+                dataView: {readOnly: true, title: 'Data', lang: ['Data View', 'Close', 'Refresh']}
+              }
+            }, series: [{
+              type: 'pie',
+              radius: ['20%', '60%'],
+              label: {normal: {position: 'inner'}},
+              data: [{value: 100, name: 'If this continues to show, \n check if data is correctly loaded.'}]
+            }]
+          }//value of default options
+        }//defaultOptions
+      }//properties
+    })
+  </script>
+</dom-module>

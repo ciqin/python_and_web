@@ -1,2 +1,1 @@
-# python_and_web
-a about data revise project
+# insight_viz_static

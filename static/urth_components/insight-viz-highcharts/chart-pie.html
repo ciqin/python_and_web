@@ -1,0 +1,104 @@
+<script src="../highcharts/highcharts.js"></script>
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+<dom-module id="viz-chart-highcharts-pie">
+    <template>
+        <iframe id="chart"></iframe>
+    </template>
+
+    <script>
+        'use strict';
+        Polymer({
+            is: "viz-chart-highcharts-pie",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readonly: true,
+                    value: {
+                        chart: {
+                            plotBackgroundColor: null,
+                            plotBorderWidth: null,
+                            plotShadow: false,
+                            type: 'pie'
+                        },
+                        tooltip: {
+                            pointFormat: '{series.name}: <b>{point.y:.3f}</b>'
+                        },
+                        plotOptions: {
+                            pie: {
+                                allowPointSelect: true,
+                                cursor: 'pointer',
+                                dataLabels: {
+                                    enabled: true,
+                                    format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+                                    style: {
+                                        color: (Highcharts.theme && Highcharts.theme.contrastTextColor)
+                                    }
+                                }
+                            }
+                        },
+                        credits: false,
+                        series: [{
+                            name: '',
+                            colorByPoint: true,
+                            data: []
+                        }]
+                    }//default value
+                }//defaultOptions
+            },//properties
+            _updateData: function (data) {
+                var jsonData = JSON.parse(data);
+                var data = {};
+                data.columns = ["gender"];
+                data.index = [1,2];
+                data.data = [[jsonData.boy_count],[jsonData.girl_count]];
+                var options = {};
+                var series = data.index.map(function (rowname, i) {
+                    if (i == 0) {
+                        return {
+                            name: rowname,
+                            y: data.data[i][0],
+                            sliced: true,
+                            selected: true
+                        }
+                    } else {
+                        return {
+                            name: rowname,
+                            y: data.data[i][0]
+                        }
+                    }
+                });
+                options['series'] = [{ name: 'value', colorByPoint: true, data: series }];
+                return options;
+            },
+            // __add_data: function () {
+            //     var name = this.properties.series
+            //     var series =name.index.map(function (rowname, i) {
+            //         if (i == 0) {
+            //             return {
+            //                 name: rowname,
+            //                 y: name.data[i][0],
+            //                 sliced: true,
+            //                 selected: true
+            //             }
+            //         } else {
+            //             return {
+            //                 name: rowname,
+            //                 y: name.data[i][0]
+            //             }
+            //         }
+            //     });
+            //     this.chart.then(function (chart) {
+            //         chart.series[0].update({ name: 'value', colorByPoint: true, data: series });
+            //     })
+            // }
+        })
+            ;
+    </script>
+</dom-module>

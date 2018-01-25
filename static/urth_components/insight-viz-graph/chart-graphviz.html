@@ -1,0 +1,95 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+
+<script src="../viz.js/viz.js"></script>
+
+<!--
+Represents a widget that draws a GraphViz chart using Viz.js
+
+Original DataFrame Standard Format:
+
+@group Insight-Viz Chart
+@element chart-graphviz
+@dependencies viz.js (Graphviz)
+-->
+
+<dom-module id="viz-chart-graphviz">
+    <template>
+        <div id="chart"></div>
+    </template>
+
+    <script>
+        'use strict';
+        Polymer({
+            is: "viz-chart-graphviz",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                width: {type: String, value: "800px"},
+                height: {type: String, value: "800px"},
+
+                format: {type: String, value: 'svg'}, //svg, png-image-element, ps, plain, xdot
+                engine: {type: String, value: 'dot'}, //dot, circo, neato, osage, twopi
+                scale: {type: Number} // the scale factor for the "png-image-element"
+            },//properties
+            observers: [
+                'resize(width, height)'
+            ],//observers
+            created: function () {
+            },//function created
+            ready: function () {
+                if (this.format == 'png')  //short hand as png
+                    this.format = 'png-image-element';
+            },
+            updateData: function (data) {
+                var that = this;
+
+                var graph = Viz(data, {
+                    format: that.format,
+                    engine: that.engine,
+                    scale: that.scale
+                });
+                if (that.format != 'svg' && that.format != 'png-image-element') {
+                    graph = $("<textarea/>").css({width: '100%', height: '100%'}).html(graph);
+                }
+
+                var div = that.$.chart || that.shadowRoot.getElementById('chart').firstChild;
+                $(div).html(graph);
+                that.resize();
+            },
+            resize: function (width, height) {
+                if (!this.isAttached) return;
+                var that = this;
+                var div = that.$.chart || that.shadowRoot.getElementById('chart').firstChild;
+                width = width || $(that).width() || that.width;
+                height = height || $(that).height() || that.height;
+                div.style.width = (typeof width == 'string' || width instanceof String) ? width : width + 'px';
+                div.style.height = (typeof height == 'string' || height instanceof String) ? height : height + 'px';
+
+                var $graph = $(div).children().first();
+                $graph.ready(function () {  //size adjustment shall be done after ready
+                    // decide stretch width or height to 100%, and other side will be auto
+                    var r_width = 1.0 * $graph.width() / $(that).width(),
+                        r_height = 1.0 * $graph.height() / $(that).height();
+
+                    if ($graph.prop("tagName") == 'IMG' && r_width < 1.0 && r_height < 1.0) {
+                        // for the case of PNG, if IMG smaller than container, do not stretch, or the PNG will be stretched
+                    } else if ($graph.prop("tagName") == 'TEXTAREA') {
+                        // for the case of ps, plain, xdot, do nothing.
+                    } else {
+                        var side_stretch = r_width > r_height ? 'width' : 'height',
+                            side_auto = r_width > r_height ? 'height' : 'width';
+
+                        var css = {};
+                        css[side_stretch] = '100%';
+                        css[side_auto] = 'auto';
+                        $graph.css(css);
+                    }
+                });
+
+            }//resize
+        });
+    </script>
+</dom-module>

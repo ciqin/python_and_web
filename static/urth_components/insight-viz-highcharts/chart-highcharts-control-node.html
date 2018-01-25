@@ -1,0 +1,291 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+
+<dom-module id="viz-chart-highcharts-flow">
+    <template>
+        <style>
+            #chart {
+                margin-top: 10px;
+            }
+        </style>
+        <iframe id="chart"></iframe>
+    </template>
+    <script>
+        'use strict';
+        Polymer({
+            is: "viz-chart-highcharts-flow",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                width: { type: String, value: "900px" },
+                height: { type: String, value: "900px" },
+                type: { type: String, value: "chart" },
+                index: 0,
+                x: 60,
+                emilinate: 0,
+                includeStr: "",
+                mainheight: 60,
+                defaultOptions: {
+                    type: Object, readOnly: true,
+                    value: {  // default value to show user some debug information
+                        chart: {
+                            backgroundColor: 'white',
+                            events: {
+                            }
+                        },
+                        credits: false,
+                        title: { text: null, },
+                        exporting: { enabled: false }
+                    }//value of default options
+                }//defaultOptions
+            },//properties
+            ready: function () {
+                $.ajax({
+                    url: "//localhost:8001/count",
+                    type: "get",
+                    success: function (data) {
+                        var data = JSON.parse(data);
+                        $(".control-receptacle .sEnter").eq(0).prop({ "placeholder": data.min_age });
+                        $(".control-receptacle .eEnter").eq(0).prop({ "placeholder": data.max_age });
+                        var total_count = data.total_count;
+                        p3.properties.dataCount = total_count;
+                    }
+                })
+            },
+            _updateData: function (data) {
+                this.properties.data = [];
+                var number = JSON.parse(data).total_count;
+                this.properties.number = number;
+                this.properties.x = 66;
+                function addElement( str,number){
+                    var index = Math.floor(str.split('').length /number);
+                    var array = str.split('');
+                    for (var i = 0; i < array.length; i++) {
+                        for (var j = 0; j < index; j++) {
+                            if (i == number * j) {
+                                array.splice(number * (j+1), 0, "<br/>")
+                            }
+                        }
+                    }
+                    return {
+                        str:array.join(''),
+                        length:(index+1)
+                    };
+                }
+                this.chart.then(function (chart) {
+                    var ren = chart.renderer;
+                    var height = 30, width = 200, padding = 5, border = 1,mainHei = 15;
+                    var str = `${number} palient first  obsrtved in EHR data`;
+                    ren.label(addElement(str,40).str, 0, 40)
+                        .attr({
+                            stroke: 'white',
+                            'stroke-width': border,
+                            width: width + 30,
+                            height: mainHei*(addElement(str,40).length-1),
+                            padding: padding,
+                            r: 15
+                        })
+                        .css({
+                            color: '#000'
+                        })
+                        .add()
+                        .shadow(true);
+                })
+                var options = {};
+                return 1;
+            },
+            __filter() {
+                var data = this.properties.data;
+                this.__again_romance(data);
+            },
+            __again_romance: function (dataEle) {
+                var flagObj = this.properties.flagObj;
+                var countObj = this.properties.countObj;
+                var that = this;
+                var x = this.properties.x;
+                var number = this.properties.number;
+                var str = '';
+                var mainStr = '';
+                var includeStr = this.properties.includeStr;
+                if(window.senterCount) number = window.senterCount;
+                this.chart.then(function (chart) {
+                    var ren = chart.renderer;
+                    var height = x, width = 200, padding = 5, border = 1, arrowHeight = 50,mainHei = 15;
+                    var drawElement = function (element) {
+                        var emilinate = that.properties.emilinate;
+                        if (flagObj.age || flagObj.gender || flagObj.eventa) {
+                            //   no select event data show 
+                            var index = 0;
+                            for (var val in flagObj) {
+                                if (val === "age") {
+                                    str = "Exclude "+(number-countObj.totalAge)+" palients without age(" + flagObj[val][0] + "," + flagObj[val][1] + ")";
+                                    str = addElement(str,35).str;
+                                    if (!/age/.test(that.properties.includeStr)) includeStr += 'age(' + flagObj[val][0] + "," + flagObj[val][1] + ') ';
+                                } else if (val === "gender") {
+                                    str = "Exclude "+(countObj.totalAge-countObj.totalGender)+" palients without gender = " + flagObj[val];
+                                    str = addElement(str,35).str;
+                                    var andStr = '';
+                                    if(flagObj.age || window.flagObj.age) andStr =' and ' 
+                                    if (!/gender/.test(that.properties.includeStr)) includeStr += `${andStr}gender= ${flagObj[val]}`;
+                                } else if(val === "eventa"){
+                                    if(flagObj[val].length>1) flagObj[val] = `(${flagObj[val][0]},${flagObj[val][1]})`;
+                                    str = "Exclude "+(countObj.totalGender-countObj.inClude)+" palients without event = " + flagObj[val] + "";
+                                    str = addElement(str,35).str;
+                                    var andStr = '';
+                                    if(flagObj.age || flagObj.gender || window.flagObj.age|| window.flagObj.gender) andStr =' and ' 
+                                    includeStr += `${andStr}event = ${flagObj[val]}`;
+                                }
+                                index++;
+                                branchDraw(str);
+                            }
+                            height += (index - 1) * arrowHeight;
+                            that.properties.x += (index+1) * arrowHeight;
+                            that.properties.includeStr = includeStr;
+                        } else if (flagObj.event) {
+                            //   select event data show 
+                            var limitStr = '';
+                            if (flagObj.limit) {
+                                limitStr = ' happent' + '(' + flagObj.limit[0] + ',' + flagObj.limit[1] + ')'
+                            }
+                            index = 1;
+                            str = 'Excluding ' + (number - emilinate) + ' palient without Event <br/>' + flagObj.event + limitStr
+                            branchDraw(str);
+                            includeStr += ' and Event ' + flagObj.event + limitStr;
+                            that.properties.includeStr = includeStr;
+                            that.properties.event = flagObj.event;
+                            that.properties.x+= 2 * arrowHeight;
+                        } else if (flagObj.addEvent) {
+                            //  add filter draw chart
+                            index = 1;
+                            str = 'Excluding ' + (number - emilinate) + ' palient without  Event<br/> ' + flagObj.addEvent + ' happend ' + flagObj.limit + ' days ' + flagObj.dayEnter +" " +that.properties.event ;
+                            branchDraw(str);
+                            // console.log(includeStr);
+                            if(that.properties.flagObj.event) flagObj.event = that.properties.flagObj.event;
+                            includeStr += ' and with Event ' + flagObj.addEvent + ' happend ' + flagObj.limit + ' days ' + flagObj.dayEnter+" Event " +that.properties.event ;
+                            that.properties.includeStr = includeStr;
+                            that.properties.x+= 2 * arrowHeight;
+                            that.properties.event  = flagObj.addEvent;
+                        }
+                        //  分支绘制图形函数  
+                        function branchDraw(str) {
+                            //  上边缘线 
+                            ren.path(['M', (width + padding * 2 + border * 2) / 2, height, 'L', (width + padding * 2 + border * 2) / 2, height + arrowHeight * index, "L", (width + padding * 2 + border * 2) / 2 + width * 3 / 4, height + arrowHeight * index])
+                                .attr({
+                                    'stroke-width': 2,
+                                    stroke: '#000'
+                                })
+                                .add();
+                            //  横向边缘箭头
+                            ren.path(['M', (width + padding * 2 + border * 2) / 2 + width * 3 / 4, height + arrowHeight * index,
+                                'L', (width + padding * 2 + border * 2) / 2 + width * 3 / 4 - 10, height + arrowHeight * index - 5,
+                                'L', (width + padding * 2 + border * 2) / 2 + width * 3 / 4 - 10, height + arrowHeight * index + 5,
+                                'L', (width + padding * 2 + border * 2) / 2 + width * 3 / 4, height + arrowHeight * index])
+                                .attr({
+                                    'stroke-width': 1,
+                                    fill: '#000'
+                                })
+                                .add();
+                            //   分支显示盒子    
+                            ren.label(str, (width + padding * 2 + border * 2) / 2 + width * 3 / 4, height + arrowHeight * index - 23)
+                                .attr({
+                                    stroke: '#ffffff',
+                                    'stroke-width': border,
+                                    width: width+15,
+                                    height: 30,
+                                    padding: padding,
+                                    r: 15
+                                })
+                                .css({
+                                    color: '#000'
+                                })
+                                .add()
+                                .shadow(true);
+                        }
+                        //   纵向链接主支横线    
+                        ren.path(['M', (width + padding * 2 + border * 2) / 2, height + arrowHeight, 'L', (width + padding * 2 + border * 2) / 2, height + arrowHeight * 2])
+                            .attr({
+                                'stroke-width': 2,
+                                stroke: '#000'
+                            })
+                            .add();
+                        //   纵向链接主支箭头     
+                        ren.path(['M', (width + padding * 2 + border * 2) / 2, height + arrowHeight * 2,
+                            'L', (width + padding * 2 + border * 2) / 2 - 5, height + arrowHeight * 2 - 10,
+                            'L', (width + padding * 2 + border * 2) / 2 + 5, height + arrowHeight * 2 - 10,
+                            'L', (width + padding * 2 + border * 2) / 2, height + arrowHeight * 2])
+                            .attr({
+                                'stroke-width': 2,
+                                fill: '#000'
+                            })
+                            .add();
+
+                        //   主支盒子   
+                        mainStr ='Include' + emilinate + ' palient with ' + includeStr
+                        includeStr = includeStr.replace(/\<br\/\>/g,'');
+                        ren.label(addElement( 'Include' + emilinate + ' palient with ' + includeStr, 38).str, 0, height + arrowHeight * 2)
+                            .attr({
+                                stroke: 'white',
+                                'stroke-width': border,
+                                width: width + 30,
+                                height: mainHei*addElement( 'Include' + emilinate + ' palient with ' + includeStr, 38).length,
+                                padding: padding,
+                                r: 15
+                            })
+                            .css({
+                                color: '#000'
+                            })
+                            .add()
+                            .shadow(true);
+                        that.properties.number = number - emilinate;
+                    }
+                    drawElement(dataEle[dataEle.length - 1]);
+                    that.properties.x += mainHei*addElement(mainStr, 38).length+1+padding*2;
+                    that.resize();
+                })
+                //   格式化字符串函数
+                 function addElement( str, number){
+                    var index = Math.floor(str.split('').length /number);
+                    var array = str.split('');
+                    for (var i = 0; i < array.length; i++) {
+                        for (var j = 0; j < index; j++) {
+                            if (i == number * j) {
+                                array.splice(number * (j+1), 0, "<br/>")
+                            }
+                        }
+                    }
+                    return {
+                        str:array.join(''),
+                        length:(index+1)
+                    };
+                }
+            },
+            resize: function (width, height) {
+                if (!this.container) return;
+                width = width || this.$this.width() || this.width;// || (this.frame ? this.frame.style.width : undefined),
+                height = height || this.$this.height() || this.height;// || (this.frame ? this.frame.style.height : undefined);
+                width += (typeof width == 'string' || width instanceof String) ? '' : 'px';
+                height += (typeof height == 'string' || height instanceof String) ? '' : 'px';
+                var that = this;
+                var setSize = function (e, w, h) {
+                    if (!e) return;
+                    e.style.width = w;
+                    e.style.height = h;
+                };
+                var frame = this.$.chart || this.shadowRoot.getElementById('chart').firstChild;
+                setSize(frame, width, height);
+                this.container.then(function (container) {
+                    height = that.properties.x + 400 + "px"
+                    setSize(container, width, height);
+                    that.chart.then(function (chart) {
+                        chart.redraw();
+                    });
+                });
+            }
+        })
+    </script>
+</dom-module>

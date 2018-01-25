@@ -1,0 +1,115 @@
+﻿<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-echarts.html">
+
+<dom-module id="viz-chart-bar2">
+  <template>
+    <div id="chart"></div>
+  </template>
+
+  <script>
+    Polymer({
+      is: "viz-chart-bar2",
+      behaviors: [
+        InsightVizBehaviors.BasicBehavior,
+        InsightVizBehaviors.EChartsBehavior,
+        InsightVizBehaviors.LoadDataBehavior
+      ],
+      properties: {
+        defaultOptions: {
+          type: Object, 
+		  readonly: true,
+          value: {
+            title: {
+              text: 'Treatment Effectiveness with Chi-squared Test'
+            },
+            tooltip: {
+              trigger: 'axis',
+              axisPointer: {
+                type: 'shadow'
+              }
+            },
+            legend: {
+			        orient: 'horizontal', //vertical
+              x: 'center',
+              y: 'bottom',
+              data: ['2011年', '2012年']
+            },
+            xAxis: {
+              type: 'value',
+              axisLabel: {
+                formatter: '{value}'
+              }
+            },
+            yAxis: {
+              type: 'category',
+              data: ['巴西', '印尼', '美国', '印度', '中国', '世界人口(万)']
+            },
+            series: [
+              {
+                name: '2011年',
+                type: 'bar',
+                data: [18203, 23489, 29034, 104970, 131744, 630230]
+              },
+              {
+                name: '2012年',
+                type: 'bar',
+                data: [19325, 23438, 31000, 121594, 134141, 681807]
+              }
+            ]
+          }//default value
+        }//defaultOptions
+      },//properties
+	  
+  	  _updateData: function (data) {
+        var options = {};
+        options['yAxis'] = {
+          type: 'category',
+          data: data.columns
+        };
+  		  options['series'] = data.index.map(function(rowname, i){
+          return {
+            name: rowname,
+            type: 'bar',
+            data: data.data[i]
+          }
+        });
+        return options;
+  	  }
+      
+	  // _updateData: function (data) {
+//         var legend = [];
+//         var xAxis = [];
+//         var category = [];
+//
+//
+//         for (var i = 0; i < data.columns.length; i++) {
+//           if (data.columns[i].toUpperCase() != "NO") {
+//             legend.push(data.columns[i]);
+//           }
+//         }
+//
+//         var data1 = [];
+//         var data2 = [];
+//         var data3 = [];
+//
+//         for (var i = 0; i < data.data.length; i++) {
+//           var d = data.data[i];
+//           category.push(d[0]);
+//
+//           data1.push(d[1]);
+//           data2.push(d[2]);
+//           data3.push(d[3]);
+//         }
+//         var series = [{name: legend[0], type: 'bar', data: data1}, {
+//           name: legend[1],
+//           type: 'bar',
+//           data: data2
+//         }, {name: legend[2], type: 'bar', data: data3}];
+//
+//         var options = {legend: {data: legend}, yAxis: [{type: 'category', data: category}], series: series};
+//         this.chart.setOption(options);
+//       }
+    });
+  </script>
+</dom-module>

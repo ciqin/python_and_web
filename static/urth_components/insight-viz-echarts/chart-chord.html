@@ -1,0 +1,145 @@
+﻿<script src="../echarts/dist/echarts.min.js"></script>  
+<script src="../echarts/dist/extension/dataTool.min.js"></script>  
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-echarts.html">
+
+<dom-module id="viz-chart-chord">
+  <template>
+    <div id="chart"></div>
+  </template>
+
+  <script>
+    Polymer({
+      is: "viz-chart-chord",
+      behaviors: [
+        InsightVizBehaviors.BasicBehavior,
+        InsightVizBehaviors.EChartsBehavior,
+        InsightVizBehaviors.LoadDataBehavior
+      ],
+      properties: {
+        defaultOptions: {
+          type: Object, 
+		  readonly: true,
+          value: {
+            title: {
+                top: 'top',
+                left: 'left'
+            },
+            tooltip: {},
+            legend: [{
+            }],
+            animationDurationUpdate: 1500,
+            animationEasingUpdate: 'quinticInOut',
+            series : [
+                {
+                    name: 'Les Miserables',
+                    type: 'graph',
+                    layout: 'circular',
+                    circular: {
+                        rotateLabel: true
+                    },
+                    data: [],
+                    links: [],
+                    categories: [],
+                    roam: true,
+                    label: {
+                        normal: {
+                            position: 'right',
+                            formatter: '{b}'
+                        }
+                    },
+                    lineStyle: {
+                        normal: {
+                            color: 'source',
+                            curveness: 0.3
+                        }
+                    }
+                }
+            ]
+          }//default value
+        }//defaultOptions
+      },//properties
+	  
+  	  _updateData: function (data) {
+        var categories = Array.from(new Set(data.data.map(function(d){return d[3]})));
+        categories.sort(function(a, b) {
+        return a - b;
+        });
+        var nodesData = [];
+        for (var i = 0; i < data.data.length; i++) {
+            nodesData.push(data.data[i][1]+":"+data.data[i][3]);
+        }
+        var nodes = Array.from(new Set(nodesData.map(function(d){return d})));
+        var nodesArray = [];
+        for(var i=0;i<nodes.length;i++){
+            var node = {
+                name: nodes[i].split(":")[0],
+                category: parseInt(nodes[i].split(":")[1]),
+                id: null,
+                itemStyle: null,
+                label: {
+                    normal: {
+                        show: true
+                    }
+                }
+            };
+            nodesArray.push(node);
+        }
+        var linksArray = [];
+        for(var i=0;i<data.data.length;i++){
+            var edge = {
+                id: null,
+                name: null,
+                source: data.data[i][0],
+                target: data.data[i][1],
+                lineStyle: {
+                    normal: {}
+                }
+            };
+            linksArray.push(edge);
+        }
+        var categoriesData = [];
+        for (var i = 0; i < categories.length; i++) {
+            categoriesData[i] = {
+                name: '类目' + categories[i]
+            };
+        }
+        var options = {};
+        options['legend'] = [{
+            // selectedMode: 'single',
+            data: categoriesData.map(function (a) {
+                return a.name;
+            })
+        }];
+        options['series'] = [
+          {
+              name: 'Les Miserables',
+              type: 'graph',
+              layout: 'circular',
+              circular: {
+                  rotateLabel: true
+              },
+              data: nodesArray,
+              links: linksArray,
+              categories: categoriesData,
+              roam: true,
+              label: {
+                  normal: {
+                      position: 'right',
+                      formatter: '{b}'
+                  }
+              },
+              lineStyle: {
+                  normal: {
+                      color: 'source',
+                      curveness: 0.3
+                  }
+              }
+          }
+        ];
+        return options;
+  	  }
+    });
+  </script>
+</dom-module>

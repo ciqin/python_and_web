@@ -1,0 +1,35 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<script src="../requirejs/require.js"></script>
+
+<script>
+    var InsightVizBehaviors = InsightVizBehaviors || {};
+    (function () {
+        'use strict';
+        var requireConfigured;
+        InsightVizBehaviors.BasicBehavior = {
+            created: function () {
+                if (!requireConfigured) {
+                    requirejs.config({
+                        paths: {
+                            jquery: this.resolveUrl('../jquery/dist/jquery.min')
+                        }
+                    });
+                    requireConfigured = true;
+                }
+            },
+            _assign: function (obj, prop, value) {
+                if (prop.length > 1) {
+                    var e = prop.shift();
+                    this._assign(obj[e] =
+                            Object.prototype.toString.call(obj[e]) === "[object Object]"
+                                ? obj[e]
+                                : {},
+                        prop,
+                        value);
+                } else
+                    obj[prop[0]] = value;
+            } // internal function used to assign value to object with a path array
+        };
+    })();
+</script>

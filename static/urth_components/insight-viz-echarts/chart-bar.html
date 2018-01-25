@@ -1,0 +1,136 @@
+﻿<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-echarts.html">
+
+<dom-module id="viz-chart-bar">
+  <template>
+    <div id="chart"></div>
+  </template>
+
+  <script>
+    Polymer({
+      is: "viz-chart-bar",
+      behaviors: [
+        InsightVizBehaviors.BasicBehavior,
+        InsightVizBehaviors.EChartsBehavior,
+        InsightVizBehaviors.LoadDataBehavior
+      ],
+      properties: {
+        defaultOptions: {
+          type: Object, readonly: true,
+          value: {
+            toolbox: {
+              feature: {
+                saveAsImage: {pixelRatio: 4, title: 'Save Image'},
+                dataView: {readOnly: true, title: 'Data', lang: ['Data View', 'Close', 'Refresh']},
+                magicType: {show: true, type: ['line', 'bar']},
+                restore: {show: true}
+              }
+            },
+            title: {
+              text: 'Validation of Clustering'
+            },
+            tooltip: {
+              trigger: 'axis'
+            },
+            yAxis: [
+              {
+                type: 'value',
+                name: 'CHA2DS2-VASc Score',
+                axisLabel: {
+                  formatter: '{value}'
+                }
+              },
+              {
+                type: 'value',
+                name: 'Stroke Occurrence Rate',
+                axisLabel: {
+                  formatter: '{value} %'
+                }
+              }
+            ],
+            legend: {
+              orient: 'horizontal', //vertical
+              x: 'center',
+              y: 'bottom',
+              data: ['蒸发量', '降水量', '温度1', '温度2']
+            },
+            xAxis: [
+              {
+                type: 'category',
+                data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+              }
+            ],
+            series: [
+              {
+                name: '蒸发量',
+                type: 'bar',
+                data: [2.0, 4.9, 7.0, 23.2, 25.6, 76.7, 135.6, 162.2, 32.6, 20.0, 6.4, 3.3]
+              },
+              {
+                name: '降水量',
+                type: 'bar',
+                data: [2.6, 5.9, 9.0, 26.4, 28.7, 70.7, 175.6, 182.2, 48.7, 18.8, 6.0, 2.3]
+              },
+              {
+                name: '温度1',
+                type: 'line',
+                yAxisIndex: 1,
+                data: [2.0, 2.2, 3.3, 4.5, 6.3, 10.2, 20.3, 23.4, 23.0, 16.5, 12.0, 6.2]
+              },
+              {
+                name: '温度2',
+                type: 'line',
+                yAxisIndex: 1,
+                data: [3.1, 3.3, 4.4, 5.6, 7.4, 11.1, 21.6, 25.7, 26.0, 14.5, 13.0, 7.2]
+              }
+            ]
+
+          }//default value
+        }//defaultOptions
+      }
+      ,//properties
+      _updateData: function (data) {
+        var legend = [];
+        var xAxis = [];
+        var category = [];
+
+
+        for (var i = 0; i < data.columns.length; i++) {
+          if (data.columns[i].toUpperCase() != "NO") {
+            legend.push(data.columns[i]);
+          }
+        }
+
+        var data1 = [];
+        var data2 = [];
+        var data3 = [];
+        var data4 = [];
+
+        for (var i = 0; i < data.data.length; i++) {
+          var d = data.data[i];
+          category.push(d[0]);
+
+          data1.push(d[1]);
+          data2.push(d[2]);
+          data3.push(d[3]);
+          data4.push(d[4]);
+        }
+        var series = [{name: legend[0], type: 'bar', data: data1}, {
+          name: legend[1],
+          type: 'bar',
+          data: data2
+        }, {name: legend[2], type: 'line', yAxisIndex: 1, data: data3}, {
+          name: legend[3],
+          type: 'line',
+          yAxisIndex: 1,
+          data: data4
+        }];
+
+        var options = {legend: {data: legend}, xAxis: [{type: 'category', data: category}], series: series};
+
+        this.chart.setOption(options);
+      }
+    });
+  </script>
+</dom-module>

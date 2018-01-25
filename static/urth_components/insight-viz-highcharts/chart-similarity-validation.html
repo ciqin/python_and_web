@@ -1,0 +1,170 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+<dom-module id="viz-chart-similarity-validation">
+    <template>
+        <iframe id="chart"></iframe>
+    </template>
+
+    <script>
+        'use strict';
+        Polymer({
+            is: "viz-chart-similarity-validation",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readonly: true,
+                    value: {
+                        chart: {
+                            zoomType: 'xy'
+                        },
+                        xAxis: [{
+                            categories: ['Group 0', 'Group 1', 'Group 2', 'Group 3', 'Group 4'],
+                            crosshair: true,
+                            title: {
+                                text: null
+                            }
+                        }],
+                        yAxis: [{ // Primary yAxis
+                            labels: {
+                                format: '{value}'
+                            },
+                            title: {
+                                text: 'CHA2DS2-VASc Score'
+                            }
+                        }, { // Secondary yAxis
+                            title: {
+                                text: 'Stroke Occurrence Rate'
+                            },
+                            max: 100,
+                            labels: {
+                                format: '{value}%'
+                            },
+                            opposite: true
+                        }],
+                        tooltip: {
+                            shared: true
+                        },
+                        credits: false,
+                        legend: {
+                            layout: 'vertical',
+                            align: 'left',
+                            x: 80,
+                            verticalAlign: 'top',
+                            y: 80,
+                            floating: true,
+                            backgroundColor: '#FFFFFF'
+                        },
+                        series: [{
+                            name: 'Derivation Set Score',
+                            type: 'column',
+                            color: 'rgba(0, 80, 0, .4)',
+                            data: []
+                        }, {
+                            name: 'Validation Set Score',
+                            type: 'column',
+                            color: 'rgba(124, 181, 236, .5)',
+                            data: []
+                        }, {
+                            name: 'Derivation Set Rate',
+                            type: 'spline',
+                            yAxis: 1,
+                            color: 'rgba(0, 80, 0, 1)',
+                            data: [],
+                            tooltip: {
+                                valueSuffix: '%'
+                            }
+
+                        }, {
+                            name: 'Validation Set Rate',
+                            type: 'spline',
+                            yAxis: 1,
+                            color: 'rgba(124, 181, 236, 1)',
+                            data: [],
+                            tooltip: {
+                                valueSuffix: '%'
+                            }
+
+                        }]
+                    }//default value
+                }//defaultOptions
+            },//properties
+
+            _updateData: function (data) {
+                var colors = [
+                    "rgba(0, 80, 0, .4)",
+                    "rgba(124, 181, 236, .5)",
+                    "rgba(0, 80, 0, 1)",
+                    "rgba(124, 181, 236, 1)"
+                ];
+
+                var options = {
+                    'xAxis': {
+                        categories: data.columns
+                    },
+                    'series': data.index.map(function (rowname, i) {
+                        return {
+                            name: rowname,
+                            color: colors[i],
+                            data: data.data[i]
+                        }
+                    })
+                };
+
+                // Give the points a 3D feel by adding a radial gradient
+                return this.highcharts.then(function (Highcharts) {
+                    Highcharts.getOptions().colors = $.map(Highcharts.getOptions().colors, function (color) {
+                        return {
+                            radialGradient: {
+                                cx: 0.4,
+                                cy: 0.3,
+                                r: 0.5
+                            },
+                            stops: [
+                                [0, color],
+                                [1, Highcharts.Color(color).brighten(-0.2).get('rgb')]
+                            ]
+                        };
+                    });
+
+
+                    options['yAxis'] = [{ // Primary yAxis
+                        labels: {
+                            format: '{value}',
+                            style: {
+                                color: Highcharts.getOptions().colors[1]
+                            }
+                        },
+                        title: {
+                            text: 'CHA2DS2-VASc Score',
+                            style: {
+                                color: Highcharts.getOptions().colors[1]
+                            }
+                        }
+                    }, { // Secondary yAxis
+                        title: {
+                            text: 'Stroke Occurrence Rate',
+                            style: {
+                                color: Highcharts.getOptions().colors[0]
+                            }
+                        },
+                        max: 100,
+                        labels: {
+                            format: '{value}%',
+                            style: {
+                                color: Highcharts.getOptions().colors[0]
+                            }
+                        },
+                        opposite: true
+                    }];
+                    return Promise.resolve(options);
+                });
+            }
+        });
+    </script>
+</dom-module>

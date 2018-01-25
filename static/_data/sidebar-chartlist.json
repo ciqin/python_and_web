@@ -1,0 +1,26 @@
+[ {
+	"id": "1",
+	"name" : "Inferactive cohort constraution",
+	"children" : [
+		{
+			"id": "1.1",
+			"name": "Load data",
+			"links": "/"
+		},
+		{
+			"id": "1.2",
+			"name": "Cohort construction",
+			"links": "load"
+		},
+		{
+			"id": "1.3",
+			"name": "Time window selection",
+			"links": "#"
+		},
+		{
+			"id": "1.4",
+			"name": "Case control definition",
+			"links":"#"
+		}
+	]
+} ]

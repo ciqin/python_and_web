@@ -1,0 +1,82 @@
+﻿<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+
+<dom-module id="viz-chart-highcharts-column">
+    <template>
+        <iframe id="chart"></iframe>
+    </template>
+    <script>
+        'use strict';
+        Polymer({
+            is: "viz-chart-highcharts-column",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readOnly: true,
+                    value: {  // default value to show user some debug information
+                        chart: {
+                            type: 'column'
+                        },
+                        xAxis: {
+                            labels:{
+                                rotation:-25
+                            }
+                        },
+                        yAxis: {
+                            min: 0,
+                            title: {
+                                text: ''
+                            },
+                            labels: {
+                                overflow: 'justify'
+                            }
+                        },
+                        plotOptions: {
+                            column: {
+                                dataLabels: {
+                                    enabled: true
+                                }
+                            }
+                        },
+                        tooltip: {
+                            enabled: true
+                        },
+                        credits: {
+                            enabled: false
+                        },
+                        series: [{}]
+                    }//value of default options
+                }//defaultOptions
+            },//properties
+
+            _updateData: function (data) {
+                var seriesArray = [];
+                for (var i = 0; i < data.data.length; i++){
+                    var array = [];
+                    for (var j = 0; j < data.data[i].length; j ++){
+                        array.push(+data.data[i][j]);
+                    }
+                    seriesArray.push(array);
+                }
+                
+                var options = {};
+                options['xAxis'] = {
+                    categories: data.columns
+                };
+                options['series'] = data.index.map(function (rowname, i) {
+                    return {
+                        name: rowname,
+                        data: seriesArray[i]
+                    }
+                });
+                return options;
+            }
+        })
+    </script>
+</dom-module>

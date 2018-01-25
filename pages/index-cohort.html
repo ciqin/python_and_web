@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Insight-Viz Charts Gallery</title>
+	<script src="/static/urth_components/webcomponentsjs/webcomponents-lite.js"></script>
+	<script src="/static/urth_components/jquery/dist/jquery.min.js"></script>
+	<script src="/static/urth_components/bootstrap/dist/js/bootstrap.min.js"></script>
+	<link href="/static/urth_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+	<link rel="import" href="/static/urth_components/insight-viz-highcharts/chart-histogram.html">
+	<link rel="import" href="/static/urth_components/insight-viz-highcharts/chart-days.html">
+	<link rel="import" href="/static/urth_components/insight-viz-highcharts/chart-pie.html">
+	<link rel="import" href="/static/urth_components/insight-viz-highcharts/chart-highcharts-control-node.html">
+	<link rel="import" href="/static/urth_components/insight-viz-highcharts/chart-time-line.html">
+	<link rel="import" href="/static/urth_components/insight-viz-general/insight-viz-general.html">
+	<link rel="import" href="/static/urth_components/insight-viz-control/insight-viz-control.html">
+
+	<style>
+		/* base start*/
+
+		html,
+		body {
+			height: 100%;
+		}
+
+		li {
+			list-style: none;
+			color: #fff;
+		}
+
+		/* base end*/
+
+		/* nav and control start*/
+
+		.prompt {
+			font-size: 12px;
+			color: rgb(163, 164, 165);
+			text-shadow: 2px 2px 1px #000;
+		}
+
+		select {
+			background: #000;
+			border: none;
+			color: #FFF;
+			font-size: 12px;
+
+		}
+
+		.line {
+			color: #fff;
+		}
+
+		.navbar {
+			height: 110px;
+			position: fixed;
+			left: 0;
+			top: 0;
+			display: flex;
+			background-color: rgba(0, 0, 0, 0.9);
+			display: none;
+		}
+
+		.control-left {
+			flex: 1;
+			position: relative;
+			padding-left: 60px;
+		}
+
+		/*  tool-top */
+
+		.tool-top {
+			height: 32px;
+			width: 100%;
+			line-height: 30px;
+		}
+
+		.control-box,
+		.gender,
+		.event {
+			float: left;
+			width: 33.33%;
+		}
+
+		.event input,
+		.control-receptacle .sEnter,
+		.control-receptacle .eEnter {
+			width: 50px;
+			height: 20px;
+			line-height: 20px;
+			background: rgb(41, 42, 43);
+			border: 1px solid #000;
+			color: #ccc;
+			font-size: 12px;
+			border-radius: 3px;
+			padding-left: 5px;
+			box-shadow: 0px -1px 1px #999 inset;
+			outline-style: none;
+		}
+
+		.eventa input {
+			width: 80px;
+		}
+
+		/*  tool-middle */
+
+		.tool-middle {
+			height: 32px;
+			line-height: 30px;
+			width: 100%;
+		}
+
+		.dayEvent,
+		.control-box {
+			flex: 1;
+		}
+
+		.tool-bottom {
+			width: 100%;
+		}
+
+		.add-filter {
+			display: flex;
+		}
+
+		.add-filter .addTime {
+			flex: 0 0 180px;
+		}
+
+		.add-filter .addTime button {
+			background: -webkit-gradient(linear, left top, left bottom, from(#5e5e5e), to(#000));
+			background: -moz-linear-gradient(top, #5e5e5e, #434343);
+			background: -ms-linear-gradient(top, #ccc 0%, #000 100%);
+			font-size: 12px;
+			padding: 5px 10px;
+			color: #fff;
+		}
+
+		.add-filter .showContent {
+			flex: 1;
+			height: 40px;
+			margin-left: 13%;
+		}
+
+		.inputBk {
+			background: #ccc;
+			border: 2px solid #ccc;
+		}
+
+		.enter-box {
+			position: absolute;
+			display: none;
+			bottom: 0px;
+			right: 0;
+			width: 63%;
+		}
+
+		.enter-box .event,
+		.enter-box .limit,
+		.enter-box .dayEnter,
+		.enter-box .submit {
+			float: left;
+			margin-right: 60px;
+		}
+
+		.enter-box .event {
+			width: auto;
+		}
+
+		.enter-box .limit input {
+			width: 50px;
+			height: 20px;
+			line-height: 20px;
+			background: rgb(41, 42, 43);
+			border: 1px solid #000;
+			color: #ccc;
+			font-size: 12px;
+			border-radius: 3px;
+			padding-left: 5px;
+			box-shadow: 0px -1px 1px #999 inset;
+			outline-style: none;
+		}
+
+		.dayEnter select {
+			width: 50px;
+			height: 20px;
+			line-height: 20px;
+			margin-top: 3px;
+		}
+
+		.submit-right {
+			flex: 0 0 120px;
+			text-align: center;
+		}
+
+		.submit-right button {
+			height: 30px;
+			width: 70px;
+			margin-top: 38px;
+			color: #fff;
+			background: -webkit-gradient(linear, left top, left bottom, from(#5e5e5e), to(#000));
+			background: -moz-linear-gradient(top, #5e5e5e, #000);
+			background: -ms-linear-gradient(top, #ccc 0%, #000 100%);
+			font-size: 12px;
+		}
+
+		.close {
+			color: #fff;
+			width: 25px;
+			height: 25px;
+			font-weight: 400;
+			font-size: 15px;
+			opacity: 1;
+			position: absolute;
+			top: 0;
+			right: 0;
+		}
+
+		/* nav and control end*/
+
+		.contoal-toolbar {
+			position: absolute;
+			z-index: 10;
+			top: 5px;
+			left: 50px;
+			width: 100%
+		}
+
+		#download {
+			position: absolute;
+			right: 68px;
+			top: 0;
+			display: block;
+			padding: 5px;
+			border-radius: 5px;
+			border: 1px solid rgba(7, 17, 27, 0.1);
+		}
+
+		/*  loaddata box start*/
+
+		.chartData button {
+			padding: 0 10px;
+		}
+
+		.chartData .btnBk {
+			background: #ccc;
+		}
+
+		.chartData {
+			position: relative;
+			margin-top: 20px;
+		}
+
+		.ageBox,
+		.genderBox {
+			width: 100%;
+			position: absolute;
+			left: 0px;
+			top: 45px;
+		}
+
+		.genderBox {
+			left: -10000px;
+		}
+
+		/*  loaddata box end*/
+
+		.insight-viz-chart {
+			float: left;
+			margin-bottom: 20px;
+		}
+
+		button {
+			outline-style: none;
+			border-radius: 5px;
+			border: 0px;
+			border: 1px solid rgba(7, 17, 27, 0.1);
+		}
+
+		.ageBox，.genderBox {
+			width: 100%;
+			position: absolute;
+			left: 0px;
+			top: 45px;
+		}
+
+		.ageType .startEnter,
+		.ageType .endEnter {
+			width: 30%;
+			height: 100%;
+			border-radius: 2px;
+			outline: none;
+			font-size: 12px;
+			text-align: center;
+			height: 60%;
+		}
+
+		.filterBtn .btn,
+		.filterBtn .eventBtn {
+			height: 60%;
+			line-height: 60%;
+			text-align: center;
+			display: inline-block;
+			outline: none;
+			border: 1px solid rgba(7, 17, 27, 0.1);
+			border-radius: 2px;
+		}
+
+		.content {
+			display: flex;
+			overflow-x: hidden;
+			position: relative;
+			height: 100%;
+		}
+
+		.content .main-left,
+		.content .main-right {
+			width: 100%;
+			position: absolute;
+			left: 0px;
+			top: 20px;
+		}
+
+		.content .main-right {
+			left: -10000px;
+		}
+
+		.main-right {
+			flex: 1;
+		}
+
+		.main-right .title {
+			height: 40px;
+			line-height: 40px;
+			display: flex;
+			text-align: center;
+			margin-top: -5px;
+			margin-bottom: 8px;
+			border-bottom: 1px solid rgba(7, 17, 27, 0.1);
+		}
+
+		.main-right .title .caseCount {
+			flex: 1;
+		}
+
+		.sidebar-left {
+			flex: 0 0 280px;
+		}
+
+		#help-left ul {
+			list-style: none;
+			padding: 0px;
+		}
+
+		#help-left ul li a {
+			width: 100%;
+			text-align: center;
+			cursor: pointer;
+			color: #333;
+		}
+
+		#help-left ul li:nth-child(1) a {
+			background: rgba(7, 17, 27, 0.1);
+		}
+
+		/*  chart show start*/
+
+		.chartShow {
+			position: relative;
+		}
+
+		.chartShow .chart-time {
+			position: absolute;
+			left: 0;
+			top: 0;
+		}
+
+		.chartShow .chart-day {
+			position: absolute;
+			left: 0;
+			top: 0;
+		}
+
+		/*  chart show end*/
+	</style>
+</head>
+
+<body>
+	<nav class="navbar navbar-inverse navbar-fixed-top">
+		<div class="control-left">
+			<div class="tool-top">
+				<div class="control-box">
+					<div class="control-receptacle">
+						<span class="prompt">Age Range</span>
+						<input type="text" class="sEnter ageSenter" />
+						<span class="line">-</span>
+						<input type="text" class="eEnter ageEenter" />
+					</div>
+				</div>
+				<div class="gender">
+					<span class="prompt">Gender</span>
+					<select>
+						<option>Gender</option>
+						<option>1</option>
+						<option>2</option>
+					</select>
+				</div>
+				<div class="event eventa">
+					<span class="prompt">Contain Event</span>
+					<input type="text" placeholder="enter,event">
+				</div>
+			</div>
+			<div class="tool-middle">
+				<div class="event dayEvent">
+					<span class="prompt">Align By Event</span>
+					<input type="text" placeholder="enter" disabled>
+				</div>
+				<div class="control-box type-box">
+					<div class="control-receptacle intercapt-input">
+						<span class="prompt margin-L">Time Window Selection</span>
+						<input type="text" class="sEnter inputBk" disabled="disabled" />
+						<span class="line">-</span>
+						<input type="text" class="eEnter inputBk" disabled="disabled" />
+					</div>
+				</div>
+			</div>
+			<div class="tool-bottom">
+				<div class="add-filter">
+					<div class="addTime">
+						<button id="add" disabled>Add Temporal Constrains</button>
+					</div>
+					<div class="showContent">
+						<ul>
+						</ul>
+					</div>
+				</div>
+				<div class="enter-box">
+					<div class="event">
+						<span class="prompt">Event</span>
+						<input type="text" placeholder="enter">
+					</div>
+					<div class="limit">
+						<span class="prompt">Happend</span>
+						<input type="text" />
+						<span class="prompt">days</span>
+
+					</div>
+					<div class="dayEnter">
+						<select>
+							<option>limit</option>
+							<option>before</option>
+							<option>after</option>
+						</select>
+						<span class="prompt">Align Event</span>
+					</div>
+					<div class="add">
+						<button>Add</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="submit-right">
+			<button id="submit">submit</button>
+			<div class="close">x</div>
+		</div>
+	</nav>
+	<div class="content">
+		<div class="contoal-toolbar">
+			<button class="toolbar-col">view toolbar</button>
+			<a href="#" id="download">download</a>
+		</div>
+		<div class="main-left clearfix">
+			<main class="container-fluid">
+				<div class="row">
+					<div class="col-md-6">
+						<div class="chart-time clearfix">
+							<viz-chart-highcharts-time-line id='p3' class='insight-viz-chart col-md-12' style="height:500px;" options-title-text="EHR Cohort Construction"
+							 options-subtitle-text="Click and drag in the plot area to zoom in" src-bind='page' src-url='//localhost:8001/{bind}?pages=0&count=100'>
+							</viz-chart-highcharts-time-line>
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div class="chartData">
+							<button class="btnBk">Age</button>
+							<button>Gender</button>
+							<div class="ageBox">
+								<viz-chart-highcharts-histogram id='p1' class='insight-viz-chart col-md-12' style='width:96%;height:560px;' options-title-text=''
+								 options-subtitle-text='' src-bind='piegender' src-url='//localhost:8001/{bind}'>
+								</viz-chart-highcharts-histogram>
+							</div>
+							<div class="genderBox">
+								<viz-chart-highcharts-pie id='p2' class='insight-viz-chart col-md-12' options-title-text='Gender' src-bind='piegender' src-url='//localhost:8001/{bind}'
+								 style="height:540px;">
+								</viz-chart-highcharts-pie>
+							</div>
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+		<div class="main-right clearfix">
+			<main class="container-fluid">
+				<div class="row">
+					<div class="col-md-6 chartShow clearfix">
+						<div class="chart-time clearfix" style="width:100%;">
+							<viz-chart-highcharts-time-line id='p3' class='insight-viz-chart col-md-12' style="height:600px;" options-title-text="EHR Cohort Construction"
+							 options-subtitle-text="Click and drag in the plot area to zoom in" src-bind='page' src-url='//localhost:8001/{bind}?pages=0&count=100'>
+							</viz-chart-highcharts-time-line>
+						</div>
+						<div class="chart-day clearfix" style="width:100%;left:-5000px">
+							<viz-chart-highcharts-days id='day1' class='insight-viz-chart col-md-12' options-title-text='Cohort Time Window Selection Definition'
+							 options-subtitle-text='Click and drag in the plot area to zoom in' height="650px">
+							</viz-chart-highcharts-days>
+						</div>
+					</div>
+					<div class="col-md-6">
+						<viz-chart-highcharts-flow id='g2' options-title-text='Cohort Construction workflow' class='insight-viz-chart col-md-12'
+						 src-bind='count' src-url='//localhost:8001/{bind}'>
+						</viz-chart-highcharts-flow>
+					</div>
+				</div>
+			</main>
+			<!-- /.container -->
+		</div>
+	</div>
+</body>
+<script>
+
+	$(".navbar-brand").click(function () {
+		$(".main-right").css({ "display": "block" })
+	})
+	var g2 = document.getElementById("g2"),
+		p1 = document.getElementById("p1"),
+		day1 = document.getElementById("day1"),
+		p3 = document.getElementById("p3");
+	var sEnter = null;
+	var eEnter = null;
+	var genderType = null;
+	var addEvent = null;
+	var addLimit = null;
+	var addDayEnter = null;
+	var globeIndex = 0;
+	var globeNumber = {};
+	//   about age and gender chart swtch start
+	$(".chartData button").eq(0).click(function () {
+		$(this).addClass("btnBk");
+		$(".chartData button").eq(1).removeClass("btnBk");
+		$(".ageBox").css({
+			"left": "0px"
+		});
+		$(".genderBox").css({
+			"left": "-10000px"
+		})
+	})
+	$(".chartData button").eq(1).click(function () {
+		$(this).addClass("btnBk");
+		$(".chartData button").eq(0).removeClass("btnBk");
+		$(".ageBox").css({
+			"left": "-10000px"
+		});
+		$(".genderBox").css({
+			"left": "0px"
+		})
+	})
+	$(".dayEvent input").on("click", function () {
+		$(this).mouseout(function () {
+			if ($(this).val() != "") {
+				$(this).attr("data-flag", true);
+				$(".intercapt-input .sEnter,.intercapt-input .eEnter").attr("disabled", false).removeClass("inputBk");
+			} else {
+				$(this).attr("data-flag", false);
+				$(".intercapt-input .sEnter,.intercapt-input .eEnter").attr("disabled", true).addClass("inputBk");
+			}
+		})
+	})
+	//   about age and gender chart swtch end
+	//   set base page content start
+	var eventType = null;
+	var number = "";
+	var casesCount = null;
+	window.flagObj = {};
+	//   set base page content end
+	$("#submit").click(function () {
+		$(".main-right").css({ "left": "0" });
+		$(".main-left").css({ "left": "-10000px" });
+		$(".row").attr("isclick", "filter");
+		if ($(".dayEvent input").attr("data-flag")) {
+			$(".chart-time").css({ "left": "-5000px" });
+			$(".chart-day").css({ "left": "0" });
+		}
+		// if($(".control-box .sEnter").eq(0).attr('senter')!=$(".control-box .sEnter").eq(0).val){
+		// 	window.gender =undefined;
+		// };
+		// if($(".control-box .eEnter").eq(0).attr('eenter')!=$(".control-box .eEnter").eq(0).val){
+		// 	window.gender =undefined;
+		// }
+		$("#download").attr("flag", true);
+		var type = $(this).attr("type");
+		genderType = $(".gender select").eq(0).val();
+		genderType === "Gender" ? genderType = "unlimit" : genderType;
+		sEnter = $(".control-receptacle .sEnter").val() ? $(".control-receptacle .sEnter").val() : 'unlimit';
+		eEnter = $(".control-receptacle .eEnter").val() ? $(".control-receptacle .eEnter").val() : 'unlimit';
+		var eventa = $(".eventa input").eq(0).val();
+		var eventb = null;
+		var eventc = $(".dayEvent input").eq(0).val();
+		$(".dayEvent input").attr("disabled",false);
+		var interscptS = -Math.abs($(".intercapt-input .sEnter").val());
+		var interscptE = $(".intercapt-input .eEnter").val();
+		//  set data base start
+		if (sEnter && sEnter != 'unlimit') $(".control-receptacle .sEnter").eq(0).attr("senter", sEnter);
+		if (eEnter && eEnter != 'unlimit') $(".control-receptacle .eEnter").eq(0).attr("eenter", eEnter);
+		if (genderType && genderType != 'unlimit') $(".gender select").eq(0).attr("gender", genderType);
+		if ($(".eventa input").val() != "") $(".eventa input").attr("event", $(".eventa input").val());
+		if ($(".dayEvent input").eq(0).val()) $(".dayEvent input").attr("eventb", $(".dayEvent input").eq(0).val())
+		if (interscptS) $(".intercapt-input .sEnter").attr("interscptS", interscptS);
+		if (interscptE) $(".intercapt-input .eEnter").attr("interscptE", interscptE);
+		//  set data base end
+		if (eventa != "" && eventc != "") {
+			if (!/,/.test(eventa)) {
+				eventa = $(".eventa input").eq(0).val();
+				eventb = 'unlimit';
+			} else {
+				eventa = $(".eventa input").eq(0).val().split(",")[0];
+				eventb = $(".eventa input").eq(0).val().split(",")[1];
+			}
+		} else if (eventa == "" && eventc == "") {
+			eventa = "unlimit"; eventb = "unlimit"; eventc = "unlimit";
+		} else {
+			if (eventc != "") {
+				eventa = "unlimit";
+				eventb = "unlimit";
+			} else if (eventa != "") {
+				if (!/,/.test(eventa)) {
+					eventb = "unlimit";
+					eventc = "unlimit";
+				} else {
+					eventa = $(".eventa input").eq(0).val().split(",")[0];
+					eventb = $(".eventa input").eq(0).val().split(",")[1];
+					eventc = "unlimit";
+				}
+			}
+		}
+		!parseInt(sEnter) || !parseInt(sEnter) < 0 ? sEnter = "unlimit" : sEnter;
+		!parseInt(eEnter) || !parseInt(eEnter) < 0 ? eEnter = "unlimit" : eEnter;
+		if ((0 < Math.floor(parseInt(sEnter)) || 0 < Math.floor(parseInt(eEnter))) || genderType) {
+			$.ajax({
+				url: "//localhost:8001/select",
+				type: "get",
+				data: {
+					minAge: sEnter,
+					maxAge: eEnter,
+					gender: genderType,
+					eventa: eventa,
+					eventb: eventb,
+					eventc: eventc
+				},
+				success: function (data) {
+					var oldData = data;
+					if (eventc == "unlimit") {
+						var lists = JSON.parse(data).total_data;
+						console.log(JSON.parse(data));
+						window.data = lists;
+						data = {};
+						var x = 0;
+						for (var i = 0; i < lists.length; i++) {
+							if (!data[lists[i][0]]) {
+								var arr = [];
+								arr.push(lists[i]);
+								data[lists[i][0]] = arr;
+							} else {
+								data[lists[i][0]].push(lists[i])
+							}
+						}
+						var newData = [];
+						for (var k in data) {
+							newData.push(data[k])
+						}
+						g2.properties.emilinate = newData.length;
+						var flagObj = {};
+						var countObj = {};
+						countObj.totalAge = JSON.parse(oldData).total_rangeAge;
+						countObj.totalGender = JSON.parse(oldData).total_rangeAgeAndGender;
+						countObj.inClude = JSON.parse(oldData).in_count;
+						var flag = window.flagObj.age && $(".ageSenter").val() != window.flagObj.age[0] || window.flagObj.age && $(".ageEenter").val() != window.flagObj.age[1];
+						var eventFlag = window.flagObj.eventa  && $(".eventa input").val() !=window.flagObj.eventa ;
+						if ((sEnter != "unlimit" && window.flagObj.age == undefined) || flag) {
+							flagObj.age = [sEnter, eEnter]; window.flagObj.age = [sEnter, eEnter]
+						}
+						if (genderType != "unlimit" && window.flagObj.gender == undefined || flag) { flagObj.gender = genderType; window.flagObj.gender = genderType };
+						if (eventa != "unlimit" && window.flagObj.eventa == undefined || eventFlag ) { flagObj.eventa = [eventa]; window.flagObj.eventa = [eventa] };
+						if (eventb != "unlimit") flagObj.eventa.push(eventb);
+						if(globeNumber.senter && $(".control-receptacle .sEnter").val() != globeNumber.senter-0 || globeNumber.eenter && $(".control-receptacle .sEnter").val() != globeNumber.eenter-0){
+							window.senterCount = JSON.parse(oldData).total_count;
+						}
+						g2.properties.flagObj = flagObj;
+						g2.properties.countObj = countObj;
+						window.number = newData.length;
+						p3.properties.dataData = newData;
+						p3.__loadTIme_load();
+						g2.__filter();
+						globeNumber.senter = $(".control-receptacle .sEnter").attr("senter");
+						globeNumber.eenter = $(".control-receptacle .eEnter").attr("eenter");
+					} else {
+						var interceptLeft = $(".control-receptacle .sEnter").eq(1).val();
+						var interceptRight = $(".control-receptacle .eEnter").eq(1).val();
+						$("#add").attr("disabled", false);
+						window.data = list2;
+						var totals = 0;
+						var data = {};
+						var list2 = JSON.parse(oldData).total_data;
+						for (var i = 0; i < list2.length; i++) {
+							if (!data[list2[i][0]]) {
+								var arr = [];
+								arr.push(list2[i]);
+								data[list2[i][0]] = arr;
+								totals++;
+							} else {
+								data[list2[i][0]].push(list2[i])
+							}
+						}
+						day1.properties.data = data;
+						day1.properties.interceptLeft = interceptLeft;
+						day1.properties.interceptRight = interceptRight;
+						day1.properties.event = eventc;
+						day1.__filter_load();
+						g2.properties.number = window.number ? window.number : window.number = casesCount;
+						window.number = totals;
+						g2.properties.emilinate = totals;
+						var flagObj = {};
+						if (event) flagObj.event = eventc;
+						if (interceptLeft || interceptRight) flagObj.limit = [interceptLeft, interceptRight];
+						g2.properties.flagObj = flagObj;
+						g2.__filter()
+					}
+
+				}
+			})
+		} else {
+			console.log("enter err")
+		}
+	})
+	//   judge input and select attr range start
+	//  senter
+	judgeBor($(".control-receptacle .sEnter").eq(0), "senter");
+	//  eenter
+	//   judge input and select attr range end
+	judgeBor($(".control-receptacle .eEnter").eq(0), "eenter");
+	//  gender
+	judgeBor($(".gender select"), "gender");
+	//  dayEvent
+	judgeBor($(".dayEvent input"), "event");
+	// intercaptS 
+	judgeBor($(".intercapt-input .sEnter"), "interscptS");
+	// intercaptE
+	judgeBor($(".intercapt-input .eEnter"), "interscptE");
+	//  function judge element  border
+	function judgeBor(ele, attr) {
+		ele.on("change", function () {
+			if (ele.attr(attr)) {
+				var senter = ele.attr(attr);
+				if (attr == "senter" || attr == "interscptS") {
+					Math.abs(ele.val()) < Math.abs(parseInt(senter)) ? ele.val(senter) : ele.val();
+				} else if (attr == "eenter" || attr == "interscptE") {
+					ele.val() > parseInt(senter) ? ele.val(senter) : ele.val();
+				} else {
+					ele.val() != senter ? ele.val(senter) : ele.val();
+				}
+			}
+		})
+	}
+	//  click add change start
+	$("#add").click(function () {
+		$(".enter-box").fadeIn(1000)
+	})
+	$(".toolbar-col").click(function () {
+		$(".navbar").stop().slideDown(500).css({ "display": "flex" });
+	})
+	$(".submit-right .close").click(function () {
+		$(".navbar").stop().slideUp(500);
+	})
+	$(".add button").click(function () {
+		addEvent = $(".enter-box .event input").val();
+		addLimit = $(".limit input").val();
+		addDayEnter = $(".dayEnter select").val();
+		if (addEvent != "Event" && addLimit != "limit" && addDayEnter) {
+			globeIndex++;
+			$(".enter-box").fadeOut(1000);
+			$(".showContent ul").append('<li>' + globeIndex + '.  event ' + addEvent + ' happend ' + addLimit + ' days ' + addDayEnter + ' align event</li>');
+			day1.properties.event = addEvent;
+			day1.properties.limit = addDayEnter;
+			day1.properties.dayEnter = addLimit;
+			var totalObj = day1.__add_fliter();
+			var total = window.number;
+			g2.properties.emilinate = totalObj.arrIdlength;
+			g2.properties.number = total;
+			var flagObj = {};
+			flagObj.addEvent = addEvent;
+			flagObj.limit = addLimit;
+			flagObj.dayEnter = addDayEnter;
+			g2.properties.flagObj = flagObj;
+			window.number = total;
+			g2.__filter();
+			day1.properties.data = totalObj.dataArr;
+			window.number = totalObj.arrIdlength;
+			return;
+		}
+	})
+	//  click add change end
+	//  view click show or hidden
+	$(".addFilter .btn").click(function () { $(".showContent").stop().slideToggle() })
+	//  download 
+	$("#download").click(function () {
+		var data = window.data;
+		var array = ["id", "data", "name", "dcategory"]
+		download(this, array, window.data);
+	})
+	//  download function start
+	function download(eleId, arr, data) {
+		var head = [arr];
+		var p = data;
+		for (var i = 0; i < p.length; i++) {
+			head.push([p[i][0], p[i][1], p[i][2], p[i][3]]);
+		}
+		var csvRows = [];
+		for (var j = 0; j < head.length; j++) {
+			csvRows.push(head[j].join(','))
+		}
+		var csvString = csvRows.join('\n');
+		var BOM = '\uFEFF';
+		csvString = BOM + csvString;
+
+		eleId.href = 'data:attachment/csv,' + encodeURI(csvString);
+		eleId.target = '_blank';
+		eleId.download = 'data.csv';
+	}
+	//  download function end
+
+</script>
+
+</html>

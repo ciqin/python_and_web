@@ -1,0 +1,161 @@
+﻿<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+<!--
+Represents a widget that draws a scatter chart (3d, draggable, with different group as different color).
+
+Original DataFrame Standard Format:
+----------------------------------------------------------------
+|  Index(Optional)  |   X  |   Y  |   Z  | Grp_Color(Optional) |
+----------------------------------------------------------------
+|  ID0001           | 0.01 | 0.04 | 0.10 |    Group_A          |
+|  ID0002           | 0.02 | 0.03 | 0.11 |    Group_A          |
+|  ID0003           | 0.03 | 0.02 | 0.12 |    Group_B          |
+|  ID0004           | 0.04 | 0.01 | 0.13 |    Group_C          |
+----------------------------------------------------------------
+Notice: Grp_Color and Grp_Shape are independent
+
+@group Insight-Viz Chart
+@element chart-scatter-3d
+@requires HighCharts
+-->
+
+<dom-module id="viz-chart-scatter-3d">
+    <template>
+        <iframe id="chart"></iframe>
+    </template>
+
+    <script>
+        Polymer({
+            is: "viz-chart-scatter-3d",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readonly: true,
+                    value: {
+                        chart: {
+                            renderTo: 'chart',
+                            margin: 100,
+                            type: 'scatter',
+                            options3d: {
+                                enabled: true,
+                                alpha: 10,
+                                beta: 30,
+                                depth: 250,
+                                viewDistance: 5,
+                                fitToPlot: false,
+                                frame: {
+                                    bottom: {size: 1, color: 'rgba(0,0,0,0.02)'},
+                                    back: {size: 1, color: 'rgba(0,0,0,0.04)'},
+                                    side: {size: 1, color: 'rgba(0,0,0,0.06)'}
+                                }
+                            }
+                        },
+                        plotOptions: {
+                            scatter: {
+                                width: 10,
+                                height: 10,
+                                depth: 10
+                            }
+                        },
+                        yAxis: {
+                            min: -10,
+                            max: 10,
+                            title: null
+                        },
+                        xAxis: {
+                            min: -10,
+                            max: 10,
+                            gridLineWidth: 1
+                        },
+                        zAxis: {
+                            min: -10,
+                            max: 10,
+                            showFirstLabel: false
+                        },
+                        legend: {
+                            enabled: false
+                        },
+                        credits: false,
+                        series: [{
+                            name: 'Reading',
+                            colorByPoint: true,
+                            data: (function randomSpherePoint(radius) {
+                                var ret = [];
+                                for (var i = 0; i < 200; i++) {
+                                    var theta = 2 * Math.PI * Math.random();
+                                    var phi = Math.acos(2 * Math.random() - 1);
+                                    var x = (radius * Math.sin(phi) * Math.cos(theta));
+                                    var y = (radius * Math.sin(phi) * Math.sin(theta));
+                                    var z = (radius * Math.cos(phi));
+                                    ret.push([x, y, z]);
+                                }
+                                return ret;
+                            })(8)
+                        }]
+                    }//default value
+                }//defaultOptions
+            },//properties
+            created: function () {
+            },
+            ready: function () {
+                this.modules = this.modules || [];
+                this.modules.push('highcharts/highcharts-3d');
+            },
+            attached: function () {
+                var that = this;
+
+                var nTry = 10;
+                var chkReady = setInterval(function () {
+                    nTry--;
+                    if (!!that.chart) {
+                        clearInterval(chkReady);
+                        // Add mouse events for rotation
+                        $(that.chart.container).on('mousedown.hc touchstart.hc', function (eStart) {
+                            eStart = that.chart.pointer.normalize(eStart);
+
+                            var posX = eStart.pageX,
+                                posY = eStart.pageY,
+                                alpha = that.chart.options.chart.options3d.alpha,
+                                beta = that.chart.options.chart.options3d.beta,
+                                newAlpha,
+                                newBeta,
+                                sensitivity = 2; // lower is more sensitive
+
+                            $(document).on({
+                                'mousemove.hc touchdrag.hc': function (e) {
+                                    // Run beta
+                                    newBeta = beta + (posX - e.pageX) / sensitivity;
+                                    that.chart.options.chart.options3d.beta = newBeta;
+
+                                    // Run alpha
+                                    newAlpha = alpha + (e.pageY - posY) / sensitivity;
+                                    that.chart.options.chart.options3d.alpha = newAlpha;
+
+                                    that.chart.redraw(false);
+                                },
+                                'mouseup touchend': function () {
+                                    $(document).off('.hc');
+                                }
+                            });
+                        });
+
+                        $(that.chart.container).data('events');
+                    }
+                    if (nTry <= 0) {
+                        clearInterval(chkReady);
+                        return console.error('Fail to wait Highcharts to be ready!');
+                    }
+                }, 100);  // for every 100ms, check if options is loaded.
+            },
+            _updateData: function (data) {
+                console.log(data);
+            }
+        });
+    </script>
+</dom-module>

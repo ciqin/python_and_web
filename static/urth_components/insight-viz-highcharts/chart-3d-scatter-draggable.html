@@ -1,0 +1,149 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+<!--
+Represents a widget that draws a scatter chart (3d, draggable, with different group as different color).
+
+Original DataFrame Standard Format:
+----------------------------------------------------------------
+|  Index(Optional)  |   X  |   Y  |   Z  | Grp_Color(Optional) |
+----------------------------------------------------------------
+|  ID0001           | 0.01 | 0.04 | 0.10 |    Group_A          |
+|  ID0002           | 0.02 | 0.03 | 0.11 |    Group_A          |
+|  ID0003           | 0.03 | 0.02 | 0.12 |    Group_B          |
+|  ID0004           | 0.04 | 0.01 | 0.13 |    Group_C          |
+----------------------------------------------------------------
+Notice: Grp_Color and Grp_Shape are independent
+
+@group Insight-Viz Chart
+@element chart-scatter-3d
+@requires HighCharts
+-->
+
+<dom-module id="viz-chart-3d-scatter-draggable">
+    <template>
+        <iframe id="chart"></iframe>
+    </template>
+
+    <script>
+        Polymer({
+            is: "viz-chart-3d-scatter-draggable",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readonly: true,
+                    value: {
+                        chart: {
+                            renderTo: 'chart',
+                            margin: 100,
+                            type: 'scatter',
+                            options3d: {
+                                enabled: true,
+                                alpha: 10,
+                                beta: 30,
+                                depth: 250,
+                                viewDistance: 5,
+                                frame: {
+                                    bottom: { size: 1, color: 'rgba(0,0,0,0.02)' },
+                                    back: { size: 1, color: 'rgba(0,0,0,0.04)' },
+                                    side: { size: 1, color: 'rgba(0,0,0,0.06)' }
+                                }
+                            }
+                        },
+                        plotOptions: {
+                            scatter: {
+                                width: 10,
+                                height: 10,
+                                depth: 10,
+                                turboThreshold: 0
+                            }
+                        },
+                        credits: false,               
+                        yAxis: {
+                            labels: {
+                                enabled: false
+                            },
+                            title: null
+                        },
+                        xAxis: {
+                            labels: {
+                                enabled: false
+                            },
+                            gridLineWidth: 1
+                        },
+                        zAxis: {
+                            labels: {
+                                enabled: false
+                            },
+                            showFirstLabel: false
+                        },
+                        legend: {
+                            enabled: true
+                        },
+                        series: [{}, {}, {}]
+                    }//default value
+                }//defaultOptions
+            },//properties
+            ready: function () {
+                this.modules = this.modules || [];
+                this.modules.push('highcharts/highcharts-3d');
+            },
+            _updateData: function (data) {
+                if (data.data.length > 5000) {
+                    var Count = data.data.length / 100;
+                    var groupsArray = Array.from(new Set(data.data.slice(0, Count).map(function (d) { if (d['3'] != null) { return d['3'] } }).filter(function (d) { return d != undefined })));
+                } else {
+                    var groupsArray = Array.from(new Set(data.data.map(function (d) { if (d['3'] != null) { return d['3'] } }).filter(function (d) { return d != undefined })));
+                }
+                var seriesData = [];
+                for (var i = 0; i < groupsArray.length; i++) {
+                    var groupsData = [];
+                    for (var j = 0; j < data.data.length; j++) {
+                        if (data.data[j][3] == groupsArray[i]) {
+                            groupsData.push([parseFloat(data.data[j][0]), parseFloat(data.data[j][1]), parseFloat(data.data[j][2])]);
+                        }
+                    }
+                    seriesData.push(groupsData);
+                };
+                
+                var series = [];
+                var colors = [
+                    'rgba(223, 83, 83, .5)',
+                    'rgba(119, 152, 191, .5)',
+                    'rgba(36,157,127, .5)'
+                ];
+                for (var i = 0; i < seriesData.length; i++) {
+                    series.push({
+                        name: 'Group ' + ': ' + i,
+                        color: colors[i],
+                        colorByPoint: false,
+                        animation: false,
+                        marker: {
+                            symbol: 'circle',
+                            radius: 2
+                        },
+                        data: seriesData[i]
+                    });
+                };
+                return {
+                    series: series, legend: {
+                        labelFormatter: function () {
+                            var index = (i++ - 3);
+                            if (index == 0 || index == 1 || index == 2) {
+                                return 'Group ' + index + ': ' + seriesData[index].length;
+                            }
+                            if (index == 3 || index == 4 || index == 5) {
+                                return 'Group ' + (index-3) + ': ' + seriesData[index-3].length;
+                            }
+                        }
+                    }
+                };
+            }
+        });
+    </script>
+</dom-module>

@@ -1,0 +1,77 @@
+<script>
+  var InsightVizBehaviors = InsightVizBehaviors || {};
+  (function () {
+    'use strict';
+    InsightVizBehaviors.LoadDataBehavior = {
+      properties: {
+        data: {type: Object, observer: 'updateData'},
+        src: {type: Object},
+        _hasDataLoaded: {type: Boolean, value: false}
+      },//props
+      observers: [
+        'updateSource(src.*)',
+        'updateData(data)'
+      ],
+      //updateData: function () {/*abstract*/},
+      // created: function () {},//function created
+      attached: function () {
+        var that = this;
+        //require(['jquery'], function ($) {
+          var src = that.src || {};
+          for (var i = 0; i < that.attributes.length; i++) {   //set src based on attributes starts with `src-`
+            var item = that.attributes[i];
+            if (item && item.name.startsWith('src-'))
+              that._assign({src: src}, item.name.split('-'), item.value);
+          }
+          if(Object.keys(src).length) {
+            //console.debug('Init `src` property of ', that, ' to ', src);
+            that.updateSource(src);
+          }
+        //});
+      },//function attached
+      updateSource: function (src) {
+        //console.trace('~~~~~load_data', src, this.isAttached);
+
+        if(!src) return console.error('Cannot update source to empty value!');
+        if (src.path && Object.keys(src.value).length) { // update a source: df/url
+          var obj = {src: this.src || {}};
+          this._assign(obj, src.path.split('.'), src.value);
+          //console.debug('Update data source [', src.path, '] of chart ', this, ' to ', src.value);
+          this._loadData();   //!!! Only need to load data here!
+        } else {    //update whole src object
+          this.src = src;    // Do NOT load data here
+          // Because this statement will call `updateSource` again and go to IF branch (src.path='src-*').
+        }
+      },//function updateSource
+      _loadData: function () {
+        var url = this.src.url;
+        var bind = this.src.bind;
+        var inside_notebook = !!window.Jupyter;
+
+        var that = this;
+        //require(['jquery'], function ($) {
+          if (inside_notebook && bind) {
+            var bindingChannel = $(that).parent().find('urth-core-channel');
+            if (bindingChannel && bindingChannel.length > 0) {
+              bindingChannel = bindingChannel[0];
+              bindingChannel.watch(bind, function(k, oldVal, newVal){
+                newVal && that.updateData(newVal);
+              });
+              var value = bindingChannel.get(bind);
+              value && that.updateData(value);
+            }else {
+              return console.error('No channels found, did you put the chart inside a <template is="urth-core-bind">?');
+            }
+          }
+
+          if (!inside_notebook && url) {
+            if(!!bind) url = url.replace('{bind}', bind);
+            $.get(url, function (d) {
+              that.updateData(d);
+            });
+          }
+        //});//require jquery
+      }//function _loadData
+    };
+  })();
+</script>

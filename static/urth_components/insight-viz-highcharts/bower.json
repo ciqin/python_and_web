@@ -1,0 +1,34 @@
+{
+  "name": "insight-viz-highcharts",
+  "description": "HighCharts WebComponents to visualize data in and out Jupyter Notebook",
+  "keywords": [
+    "insight-viz",
+    "visualization",
+    "web-components",
+    "declarativewidgets",
+    "highcharts"
+  ],
+  "ignore": [
+    "README.md",
+    "**/.*"
+  ],
+  "dependencies": {
+    "polymer": "~1.5",
+    "requirejs": "^2",
+	"jquery": "^3",
+	"highcharts": "^5"
+  },
+  "resolution":{
+    "webcomponentsjs": "~0.7"
+  },
+  "private": true,
+  "license": "Copyright (c) IBM 2016",
+  "homepage": "https://github.ibm.com/InsightFactory/insight-viz",
+  "authors": [
+    "Bibo Hao <haobibo@cn.ibm.com>"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.ibm.com/InsightFactory/insight-viz.git"
+  }
+}

@@ -1,0 +1,17 @@
+csv文件：
+		patients.csv 病人基本信息
+		
+		patients_consult.csv 病人问诊记录
+init.py：
+		传入csv文件路径，生成数据库文件
+		自动生成两张表：
+		
+		patients_consult表结构：
+		含义：主键，病人编号，问诊时间，分类，病症代号
+		字段：rowid,patient_number,consult_date,category,disease_name  FROM patients_consult
+		
+		patients表结构：
+		含义：主键，病人编号，年龄，性别，是否喝酒，是否抽烟
+		字段：rowid,patient_number,age,gender,alcohol,tobacco
+new_app.py:
+		主程序

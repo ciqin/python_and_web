@@ -1,0 +1,128 @@
+﻿<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-echarts.html">
+
+<dom-module id="viz-chart-radar">
+  <template>
+    <div id="chart"></div>
+  </template>
+
+  <script>
+    Polymer({
+      is: "viz-chart-radar",
+      behaviors: [
+        InsightVizBehaviors.BasicBehavior,
+        InsightVizBehaviors.EChartsBehavior,
+        InsightVizBehaviors.LoadDataBehavior
+      ],
+      properties: {
+        defaultOptions: {
+          type: Object, readonly: true,
+          value: {
+            title: {
+              left: 'center',
+              text: 'Radar Map',
+              subtext: 'Visualization data loading...'
+            },
+            tooltip: {},
+            toolbox: {
+              feature: {
+                saveAsImage: {pixelRatio: 4, title: 'Save Image'},
+                dataView: {readOnly: true, title: 'Data', lang: ['Data View', 'Close', 'Refresh']}
+              }
+            },
+            legend: {
+              orient: 'horizontal', //vertical
+              x: 'center',
+              y: 'bottom',
+              data: ['Series_A', 'Series_B']
+            },
+            radar: {
+              // shape: 'circle',
+              indicator: [
+                {name: 'DIM_A', max: 100},
+                {name: 'DIM_B', max: 100},
+                {name: 'DIM_C', max: 100},
+                {name: 'DIM_D', max: 100},
+                {name: 'DIM_E', max: 100},
+                {name: 'DIM_F', max: 100}
+              ]
+            },
+            series: [{
+              name: 'Data Series',
+              type: 'radar',
+              // areaStyle: {normal: {}},
+              data: [
+                {
+                  value: [20, 80, 20, 80, 20, 80],
+                  name: 'Series_A'
+                },
+                {
+                  value: [90, 10, 90, 10, 90, 10],
+                  name: 'Series_B'
+                }
+              ]
+            }]
+          }//default value
+        }//defaultOptions
+      }
+      ,//properties
+      _updateData: function (data) {
+        var flag = 0;
+        var sdata = [];
+        var indicator = [];
+        var legend = [];
+        var max = [];
+        var series = [];
+
+        for (var i = 0; i < data.data.length; i++) {
+          var d = data.data[i];
+          var name = d[0];
+          legend.push(name);
+
+          if (name.toUpperCase() != "MAX" && flag == 0) {
+            var value = [];
+            for (var j = 1; j < d.length; j++) {
+              value.push(d[j]);
+
+              if (max.length < d.length - 1) {
+                max.push(d[j]);
+              } else {
+                if (max[j - 1] < d[j]) {
+                  max.splice(j - 1, 1, d[j]);
+                }
+              }
+            }
+            sdata.push({name: name, value: value});
+
+          } else if (name.toUpperCase() == "MAX") {
+            d.splice(0, 1);
+            max = d;
+            flag = 1;
+          } else if (name.toUpperCase() != "MAX" && flag == 1) {
+            var value = [];
+            for (var j = 1; j < d.length; j++) {
+              value.push(d[j]);
+            }
+            sdata.push({name: name, value: value});
+          }
+        }
+
+        var c = 0;
+        for (var i = 0; i < data.columns.length; i++) {
+
+          if (data.columns[i] != "NO") {
+            var ind = {name: data.columns[i], max: max[c]}
+            indicator.push(ind)
+            c++;
+          }
+        }
+        var radar = {indicator: indicator};
+        series.push({type: 'radar', data: sdata})
+        return {
+          series: series, radar: radar, legend: {data: legend}
+        };
+      }
+    });
+  </script>
+</dom-module>

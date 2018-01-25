@@ -1,0 +1,144 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+<dom-module id="viz-chart-highcharts-area-status">
+    <template>
+        <iframe id="chart"></iframe>
+    </template>
+    <script>
+        function isBigEnough(element, index, array) {
+            return element == 100;
+        }
+        function isNotNegative(element, index, array) {
+            return element > 0;
+        }
+        'use strict';
+        Polymer({
+            is: "viz-chart-highcharts-area-status",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readonly: true,
+                    value: {
+                        plotOptions: {
+                            areaspline: {
+                                stacking: 'normal',
+                            },
+                            series: {
+                                enableMouseTracking: true
+                            }
+                        },
+                        yAxis: [{
+                            labels: {
+                                format: '{}'
+                            },
+                            title: {
+                                text: '',
+                            },
+                            min: 0,
+                            max: 100,
+                            reversed: true
+                        }, {
+                            labels: {
+                                format: '{}'
+                            },
+                            title: {
+                                text: '',
+                            },
+                            min: 0,
+                            max: 100,
+                            reversed: true
+                        }, {
+                            labels: {
+                                format: '{}'
+                            },
+                            title: {
+                                text: '',
+                            },
+                            min: 0,
+                            max: 100,
+                            reversed: true
+                        }, {
+                            labels: {
+                                format: '{value}'
+                            },
+                            title: {
+                                text: 'Percentage (%)'
+                            },
+                            min: 0,
+                            max: 100,
+                            reversed: false
+                        }
+                        ],
+                        tooltip: {
+                            pointFormat: '<span style="color:{series.color}">{series.name}</span>:  <b>{point.percentage:.1f}%</b><br/>',
+                            shared: true
+                        },
+                        credits: false,
+                        series: [{
+                        },
+                            {
+                            },
+                            {
+                            }
+                        ]
+                    }//default value
+                }//defaultOptions
+            },//properties
+
+            _updateData: function (data) {
+                var options = {};
+                var seriesArray = [];
+                for (var i = 0; i < data.data.length; i++){
+                    var array = [];
+                    for (var j = 0; j < data.data[i].length; j ++){
+                        array.push(+data.data[i][j]);
+                    }
+                    seriesArray.push(array);
+                }
+
+                var colors = [
+                    "green",
+                    "orange",
+                    "#ccc"
+                ];
+                var i = data.index.length;
+                var series = data.index.map(function (rowname, i) {
+                    return {
+                        type: 'areaspline',
+                        name: data.index[i],
+                        stack: 0,
+                        color: colors[i],
+                        data: seriesArray[i]
+                    }
+                });
+                return {
+                    series: series, xAxis: {categories: data.columns}, legend: {
+                        labelFormatter: function () {
+                            var index = (i++ - 3);
+                            if (index == 0) {
+                                return data.index[index] + ':' + seriesArray[index].filter(isBigEnough).length;
+                            }
+                            if (index == 1 || index == 2) {
+                                return data.index[index] + ':' + seriesArray[index].filter(isNotNegative).length;
+                            }
+                            if (index == 3) {
+                                return data.index[index-3] + ':' + seriesArray[index-3].filter(isBigEnough).length;
+                            }
+                            if (index == 4 || index == 5) {
+                                return data.index[index-3] + ':' + seriesArray[index-3].filter(isNotNegative).length;
+                            }
+                        }
+                    }
+                };
+
+            }
+        })
+        ;
+    </script>
+</dom-module>

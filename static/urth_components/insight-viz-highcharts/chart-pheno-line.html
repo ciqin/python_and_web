@@ -1,0 +1,119 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+<dom-module id="viz-chart-pheno-line">
+    <template>
+        <iframe id="chart"></iframe>
+    </template>
+
+    <script>
+        'use strict';
+        Polymer({
+            is: "viz-chart-pheno-line",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readonly: true,
+                    value: {
+                        chart: {
+                            zoomType: 'xy'
+                        },
+                        xAxis: [{
+                            crosshair: true,
+                            title: {
+                                text: 'CHA2DS2-VASc Score'
+                            }
+                        }],
+                        yAxis: [{ // Primary yAxis
+                            labels: {
+                                format: '{value}'
+                            },
+                            //max: 600,
+                            title: {
+                                text: 'Case Number'
+                            }
+                        }],
+                        tooltip: {
+                            shared: true
+                        },
+                        credits: false,
+                        series: [{
+                        }, {
+                        }, {
+                        }, {
+                        }, {
+                        }]
+                    }//default value
+                }//defaultOptions
+            },//properties
+
+            _updateData: function (data) {
+                var seriesArray = [];
+                for (var i = 0; i < data.data.length; i++){
+                    var array = [];
+                    for (var j = 0; j < data.data[i].length; j ++){
+                        array.push(parseInt(data.data[i][j]));
+                    }
+                    seriesArray.push(array);
+                }
+
+                var colors = [
+                    'rgba(223, 83, 83, 1)',
+                    'rgba(119, 152, 191, 1)',
+                    'rgba(36,157,127, 1)',
+                    'rgba(255, 127, 14, 1)',
+                    'rgba(255, 0, 255, 1)'
+                ];
+                var options = {
+                    xAxis: {
+                        categories: data.columns
+                    },
+                    series: data.index.map(function (rowname, i) {
+                        return {
+                            name: rowname,
+                            type: 'spline',
+                            color: colors[i],
+                            data: seriesArray[i]
+                        }
+                    })
+                };
+
+                // Give the points a 3D feel by adding a radial gradient
+                return this.highcharts.then(function (Highcharts) {
+                    Highcharts.getOptions().colors = $.map(Highcharts.getOptions().colors, function (color) {
+                        return {
+                            radialGradient: {
+                                cx: 0.4,
+                                cy: 0.3,
+                                r: 0.5
+                            },
+                            stops: [
+                                [0, color],
+                                [1, Highcharts.Color(color).brighten(-0.2).get('rgb')]
+                            ]
+                        };
+                    });
+                    options['yAxis'] = {
+                        labels: {
+                            style: {
+                                color: Highcharts.getOptions().colors[1]
+                            }
+                        },
+                        //max: 600,
+                        title: {
+                            style: {
+                                color: Highcharts.getOptions().colors[1]
+                            }
+                        }
+                    };
+                    return Promise.resolve(options);
+                });
+            }
+        });
+    </script>
+</dom-module>

@@ -1,0 +1,542 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+
+<script src="../viz.js/viz.js"></script>
+
+<!--
+Represents a widget that draws a GraphViz chart using Viz.js
+Original DataFrame Standard Format:
+@group Insight-Viz Chart
+@element chart-graphviz
+@dependencies viz.js (Graphviz)
+-->
+
+<dom-module id="viz-chart-graphviz-decisiontree">
+    <style>
+        #box {
+            border: 1px solid #000;
+            background-color: antiquewhite;
+            position: absolute;
+            left: 602px;
+            top: 58px;
+            display: none;
+        }
+    </style>
+    <template>
+        <div id="chart"></div>
+        <div id="box"></div>
+    </template>
+
+    <script>
+        'use strict';
+        Polymer({
+            is: "viz-chart-graphviz-decisiontree",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                width: { type: String, value: "800px" },
+                height: { type: String, value: "800px" },
+                format: { type: String, value: 'svg' }, //svg, png-image-element, ps, plain, xdot
+                engine: { type: String, value: 'dot' }, //dot, circo, neato, osage, twopi
+                scale: { type: Number } // the scale factor for the "png-image-element"
+            },//properties
+            observers: [
+                'resize(width, height)'
+            ],//observers
+            created: function () {
+            },//function created
+            ready: function () {
+                if (this.format == 'png')  //short hand as png
+                    this.format = 'png-image-element';
+            },
+            updateData: function (data) {
+                var color = ['#90B9CF', '#bd4d53', '#1f77b4', '#aec7e8', '#6b6ecf', '#17becf', '#e7ba53', '#7f7f7f', '#9edae5']
+                var groupsArray = Array.from(new Set(data.data.map(function (d) { if (d[4] != null) { return d[4] } }).filter(function (d) { return d != undefined })));
+                var treeStr = "digraph dtree { node [fontsize=10];";
+                var nodeStr = "";
+                var tableStr = "";
+                var edgeStr = "";
+                var linkstr = "";
+                var contentStr = "";
+                var isUnderline = function (element) {
+                    if (/[_]/.test(element)) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                }
+                var isUnderNode = function(element){
+                    if (/[node]/.test(element)) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                }
+                var newDataArray= [];
+                if(isUnderNode(data.data[0][0])){
+                    var newDataOneArr = [];
+                    for(var i = 0; i<data.data.length;i++){
+                        newDataOneArr.push(data.data[i][0]);
+                    }
+                    for(var i = 0; i<data.data.length;i++){
+                        var newDataChiArr = [];
+                        newDataChiArr.push(data.data[i][0]);
+                        for(var j = 0; j<newDataOneArr.length;j++){
+                            if(data.data[i][4]==null){
+                                newDataChiArr.push(null);
+                                break;
+                            }else if(data.data[i][4]==newDataOneArr[j]){
+                                newDataChiArr.push(data.data[i][4]);
+                            }
+                        }
+                        newDataArray.push(newDataChiArr);
+                    }
+                }else{
+                    var newDataOneArr = [];
+                    for(var i = 0; i<data.data.length;i++){
+                        newDataOneArr.push(data.data[i][0]);
+                    }
+                    for(var i = 0; i<data.data.length;i++){
+                        var newDataChiArr = [];
+                        newDataChiArr.push(data.data[i][0]+"_"+i);
+                        for(var j = 0; j<newDataOneArr.length;j++){
+                            if(data.data[i][4]==null){
+                                newDataChiArr.push(null);
+                                break;
+                            }else if(data.data[i][4]==newDataOneArr[j]){
+                                newDataChiArr.push(data.data[i][4]+"_"+j);
+                            }
+                        }
+                        newDataArray.push(newDataChiArr);
+                    }
+                    groupsArray = Array.from(new Set(newDataArray.map(function (d) { if (d[1] != null) { return d[1] } }).filter(function (d) { return d != undefined })));
+                }
+                var getDepth = function (newLevelArray, depthArray) {
+                    for (var i = 0; i < data.data.length; i++) {
+                        if ($.inArray(data.data[i][4], depthArray) != -1) {
+                            newLevelArray.push(data.data[i][0]);
+                            newLevelArray.push($(data.data).index(data.data[i]));
+                        }
+                    }
+                    if (newLevelArray.length != 0) {
+                        rankArray.push(newLevelArray);
+
+                    } else {
+                        return;
+                    }
+                    return getDepth(new Array(), newLevelArray);
+                };
+                var parentid = "";
+                var depthArray = new Array();
+                var rankArray = [];
+                var newLevelArray = new Array();
+                var dataElmentLength = data.data[1].length;
+                var dataCount = data.data[1].length - 6;
+                for (var i = 0; i < data.data.length; i++) {
+                    if (i < data.data.length) {
+                        color.push(color[i]);
+                        color.push(color[i + 1]);
+                    }
+                    var dataArrayScale = [];
+                    for (var j = 1; j <= dataCount; j++) {
+                        var dataNumber = (data.data[i][data.data[1].length - j] / data.data[i][2]).toFixed(5);
+                        dataArrayScale.push(dataNumber);
+                    }
+                    var setosaPercent = (data.data[i][6] / data.data[i][2]).toFixed(5);
+                    var versicolorPercent = (data.data[i][7] / data.data[i][2]).toFixed(5);
+                    var virginicaPercent = (data.data[i][8] / data.data[i][2]).toFixed(5);
+                    var totalPercent = (data.data[i][2] / data.data[i][1]).toFixed(5);
+                    var dataStrNode = '',
+                        dataStrTable = '';
+                    for (var j = 0; j < dataArrayScale.length; j++) {
+                        dataStrNode += color[j] + ";" + dataArrayScale[dataArrayScale.length - j - 1] + ":"
+                    }
+                    for (var j = dataArrayScale.length; j > 0; j--) {
+                        var columnsStr = ''
+                        dataArrayScale.length === j ? columnsStr = data.columns[dataElmentLength - j] : columnsStr = "     " + data.columns[dataElmentLength - j];
+                        dataStrTable += '<tr>'
+                            + '    <td border=\"0\" width=\"10px\" bgcolor=\"' + color[dataArrayScale.length - j] + '"\></td>'
+                            + '    <td border=\"0\" labelfloat=\"true\">' + columnsStr + '</td>'
+                            + '   <td border=\"0\">' + (dataArrayScale[j - 1] * 100).toFixed(3) + '</td>'
+                            + '   <td border=\"0\">' + data.data[i][dataElmentLength - j] + '</td>'
+                            + '   </tr>'
+                    }
+                    var dataTitle;
+                    isUnderline(data.data[i][0]) ? dataTitle = data.data[i][0].split("_")[0] : dataTitle = data.data[i][0];
+                    nodeStr = data.data[i][0] + ' [fillcolor=\"' + dataStrNode + '\" label=\"\",height = .98,size=\"5.0, 8.3\",size=300,shape=circle,style=wedged];';
+                    tableStr = data.data[i][0] + (i + 20) + " [label=<"
+                        + "    <table border=\"1\" cellpadding=\"2\" cellspacing=\"0\">"
+                        + "    <tr><td height=\"10px\" border=\"0\" colspan=\"3\">" + dataTitle + "</td></tr>"
+                        + "    <HR/>"
+                        + "    <tr>"
+                        + "    <td border=\"0\"></td>"
+                        + "    <td border=\"0\">Category</td>"
+                        + "    <td border=\"0\">%</td>"
+                        + "    <td border=\"0\">n</td>"
+                        + "    </tr>"
+                        + "    <HR/>"
+                        + dataStrTable +
+                        + "    <HR/>"
+                        + "    <tr>"
+                        + "    <td border=\"0\"></td>"
+                        + "    <td border=\"0\">Total</td>"
+                        + "    <td border=\"0\">" + (totalPercent * 100).toFixed(3) + "</td>"
+                        + "    <td border=\"0\">" + data.data[i][2] + "</td>"
+                        + "    </tr>"
+                        + "    </table>"
+                        + "    >, shape=plaintext];";
+                    if (data.data[i][4] != null) {
+                        edgeStr = data.data[i][4] + " -> " + data.data[i][0] + " [label=\"" + data.data[i][5] + "\"];";
+                    } else {
+                        parentid = data.data[i][0];
+                        depthArray.push(parentid);
+                        rankArray.push(depthArray);
+                        getDepth(newLevelArray, depthArray);
+                    }
+                    linkstr = data.data[i][0] + " -> " + data.data[i][0] + (i + 20) + " [style=\"invisible\",arrowhead=none];";
+                    contentStr += nodeStr + tableStr + edgeStr + linkstr;
+                }
+                console.log(contentStr );
+                //  add 0 element start
+                rankArray[0].push(0);
+                //  add contentStr str start
+                for (var i = 0; i < rankArray.length; i++) {
+                    contentStr += "{rank = same;"
+                    for (var j = 0; j < rankArray[i].length / 2; j++) {
+                        contentStr += " " + rankArray[i][j * 2] + ";" + rankArray[i][j * 2] + (rankArray[i][j * 2 + 1] + 20) + ";";
+                        if (j == rankArray[i].length - 1) {
+                            contentStr = contentStr.substring(0, contentStr.length - 1);
+                        }
+                    }
+                    contentStr += "}"
+                }
+                console.log(contentStr)
+                var box1 = 'a [fillcolor="#90B9CF;0.38245:#bd4d53;0.61755:" label="",height = .98,size="5.0, 8.3",size=300,shape=circle,style=wedged]'
+                var boxnode = 'b [label=<' +
+                    '<table border="1" cellpadding="2" cellspacing="0">' +
+                    '<tr><td height="10px" border="0" colspan="3"></td></tr>' +
+                    '<tr>' +
+                    '<td border="0"></td>' +
+                    '<td border="0">Category</td>' +
+                    '<td border="0">%</td>' +
+                    '<td border="0">n</td>' +
+                    '</tr>' +
+                    '</table>' +
+                    '>, shape=plaintext];a -> b [style="invisible",arrowhead=none];{rank = same; a; b}'
+                var endStr = " }";
+                var treeData = treeStr + contentStr + endStr;
+                var that = this;
+                var graph = Viz(treeData, {
+                    format: that.format,
+                    engine: that.engine,
+                    scale: that.scale
+                });
+                // console.log(graph);
+                if (that.format != 'svg' && that.format != 'png-image-element') {
+                    graph = $("<textarea/>").css({ width: '100%', height: '100%' }).html(graph);
+                }
+                var div = that.$.chart || that.shadowRoot.getElementById('chart').firstChild;
+                $(div).html(graph);
+                $("svg").attr({"width":"1000px","height":"600px"});
+                //    array and change arr start
+                if (isUnderline(newDataArray[0][0])) {
+                    var changeArrBig = [];
+                    for (var i = 0; i < newDataArray.length; i++) {
+                        var changeArrSmall = [];
+                        if (newDataArray[i][1] == null) {
+                            changeArrSmall.push("node" + newDataArray[i][0].split("_")[1]);
+                            changeArrSmall.push(null);
+                        } else {
+                            changeArrSmall.push("node" + newDataArray[i][0].split("_")[1]);
+                            changeArrSmall.push("node" + newDataArray[i][1].split("_")[1]);
+                        }
+                        changeArrBig.push(changeArrSmall);
+                    }
+                }
+                var getChildren = function (childArray, parentArray) {
+                    if (isUnderline(newDataArray[0][0])) {
+                        for (var j = 0; j < newDataArray.length; j++) {
+                            if (data.data[j][0] != null) {
+                                if ($.inArray(changeArrBig[j][1], parentArray) != -1) {
+                                    childArray.push(changeArrBig[j][0]);
+                                    childrenArray.push(changeArrBig[j][0]);
+                                }
+                            }
+                        }
+                        if (childArray.length == 0) {
+                            return;
+                        }
+                        return getChildren(new Array(), childArray);
+                    } else {
+                        for (var j = 0; j < data.data.length; j++) {
+                            if ($.inArray(data.data[j][4], parentArray) != -1) {
+                                childArray.push(data.data[j][0]);
+                                childrenArray.push(data.data[j][0]);
+                            }
+                        }
+                        if (childArray.length == 0) {
+                            return;
+                        }
+                        return getChildren(new Array(), childArray);
+                    }
+
+                }
+                var strCoordinate = document.getElementById('node' + (4)).children[5].getAttribute("points");
+                var nodeElement = [];
+                var polygons = document.querySelectorAll('polygon');
+                for (var i = 1; i <= data.data.length; i++) {
+                    if (document.querySelectorAll('#node' + i * 2 + ' polygon').length != 0) {
+                        for (var j = 0; j < dataCount; j++) {
+                            nodeElement.push(document.querySelectorAll('#node' + i * 2 + ' polygon')[j])
+                        }
+
+                    }
+                }
+
+                for (var i = 0; i < nodeElement.length; i++) {
+                    var oldDot = nodeElement[i].getAttribute("points");
+                    nodeElement[i].setAttribute("points", elementConvert(oldDot));
+                }
+                // element Convert function start
+                function elementConvert(item) {
+                    var array = [];
+                    item.split(" ").map(function (v, i) {
+                        if (i === 0) {
+                            var number1 = (v.split(",")[0] - 0) + 2;
+                            var number2 = v.split(",")[1] - 5;
+                            var arr = v.split(",")
+                            arr.splice(0, 1, number1 + "");
+                            arr.splice(1, 1, number2 + "");
+                            array.push(arr);
+                        } else if (i === 1) {
+                            var number1 = (v.split(",")[0] - 0) + 2;
+                            var number2 = (v.split(",")[1] - 0) + 5;
+                            var arr = v.split(",")
+                            arr.splice(0, 1, number1 + "");
+                            arr.splice(1, 1, number2 + "");
+                            array.push(arr);
+                        } else if (i === 2) {
+                            var number1 = v.split(",")[0] - 2;
+                            var number2 = (v.split(",")[1] - 0) + 5;
+                            var arr = v.split(",")
+                            arr.splice(0, 1, number1 + "");
+                            arr.splice(1, 1, number2 + "");
+                            array.push(arr);
+                        } else if (i === 3) {
+                            var number1 = v.split(",")[0] - 2;
+                            var number2 = v.split(",")[1] - 5;
+                            var arr = v.split(",")
+                            arr.splice(0, 1, number1 + "");
+                            arr.splice(1, 1, number2 + "");
+                            array.push(arr);
+                        } else {
+                            var number1 = (v.split(",")[0] - 0) + 2;
+                            var number2 = v.split(",")[1] - 5;
+                            var arr = v.split(",")
+                            arr.splice(0, 1, number1 + "");
+                            arr.splice(1, 1, number2 + "");
+                            array.push(arr);
+                        }
+
+                    })
+                    var arrStr = []
+                    array.map(function (v) {
+                        arrStr.push(v.join(","))
+                    })
+                    var newStr = arrStr.join(" ");
+                    return newStr;
+                }
+                var texts = document.querySelectorAll("text");
+                for (var i = 0; i < texts.length; i++) {
+                    texts[i].setAttribute("font-weight", "700");
+                    texts[i].setAttribute("font-family", "sans-serif,Microsoft YaHei,Helvetica,Arial");
+                    texts[i].setAttribute("font-size", "9.0");
+                }
+
+                // element Convert function end
+                var mouseArr = []
+                for (var i = 0; i < data.data.length * 2; i++) {
+                    if (i % 2 != 0) {
+                        mouseArr.push(document.querySelectorAll("#node" + i + " path"));
+                    }
+
+                }
+                //   添加自定义比例
+                var addTextArr = [],
+                    addNameArr = [];
+                var dataDataLength = data.data[0].length - 6;
+                if (dataDataLength <= 2) {
+                    for (var i = 0; i < data.data.length * 2 + 1; i++) {
+                        if (i % 2 == 0 && i != 0) {
+                            addTextArr.push(document.querySelectorAll("#node" + i + " text")[5].innerHTML);
+                            addTextArr.push(document.querySelectorAll("#node" + i + " text")[8].innerHTML);
+                            addNameArr.push(document.querySelectorAll("#node" + i + " text")[4].innerHTML);
+                            var trimArr = document.querySelectorAll("#node" + i + " text")[7].innerHTML.split(";");
+                            addNameArr.push(trimArr[trimArr.length - 1]);
+                        }
+                    }
+                } else {
+                    for (var i = 0; i < data.data.length * 2 + 1; i++) {
+                        if (i % 2 == 0 && i != 0) {
+                            for (var j = 0; j < dataDataLength; j++) {
+                                if (parseInt(document.querySelectorAll("#node" + i + " text")[j * 3 + 5].innerHTML) != 0) {
+                                    addTextArr.push(document.querySelectorAll("#node" + i + " text")[j * 3 + 5].innerHTML);
+                                    var trimStr = document.querySelectorAll("#node" + i + " text")[j * 3 + 4].innerHTML;
+                                    if (/&nbsp;/.test(trimStr)) {
+                                        var trimArr = trimStr.split(";");
+                                        addNameArr.push(trimArr[trimArr.length - 1]);
+                                    } else {
+                                        addNameArr.push(trimStr);
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+                }
+                //   set add mouseover show number start
+                var count = -1;
+                mouseArr.forEach(function (v, i) {
+                    v.forEach(function (vEle, vInd) {
+                        count++;
+                        $(vEle).attr("scale", addTextArr[count]);
+                        $(vEle).attr("name", addNameArr[count]);
+                        $(vEle).attr("thatHeight", vEle.getClientRects()[0].height / 2);
+                        $(vEle).attr("thatWidth", vEle.getClientRects()[0].width / 2);
+                        $(vEle).attr("thatLeft", vEle.getClientRects()[0].left+20);
+                        $(vEle).attr("thatTop", vEle.getClientRects()[0].top - 95.1);
+                    })
+                });
+                //  清楚默认提示框
+                for (var i = 0; i < data.data.length; i++) {
+                    $("#node" + (i * 2 + 1) + " title").html("")
+                }
+                mouseArr.forEach(function (v, i) {
+                    v.forEach(function (vEle, vInd) {
+                        $(vEle).on("mouseover", function () {
+                            var thatVla = $(this).attr("scale"),
+                                thatName = $(this).attr("name"),
+                                thatHeight = parseInt($(this).attr("thatHeight")),
+                                thatWidth = parseInt($(this).attr("thatWidth")),
+                                thatLeft = parseInt($(this).attr("thatLeft")),
+                                thatTop = parseInt($(this).attr("thatTop"));
+                            $("#box").css({
+                                "display": "block",
+                                "left": thatWidth + thatLeft + "px",
+                                "top": thatHeight + thatTop + "px"
+                            }).html(thatName + " : " + thatVla + "%")
+                        })
+                        $(vEle).on("mouseout", function () {
+                            $("#box").css({
+                                "display": "none"
+                            })
+                        })
+                    })
+                })
+                //   set add mouseover show number end
+                var childrenArray = [];
+                //  old click show and hide start
+                var newGroupsArray = [];
+                for (var i = 0; i < groupsArray.length; i++) {
+                    newGroupsArray.push(parseInt(groupsArray[i].split("_")[1]));
+                }
+                for (var i = 0; i < data.data.length; i++) {
+                    if ($.inArray(i, newGroupsArray) != -1) {
+                        clickShowCon();
+                    } else {
+                        clickShowCon();
+                    }
+
+                }
+                //  new click show and hide start 
+
+                function clickShowCon() {
+                    document.getElementById('node' + (i * 2 + 1).toString()).addEventListener('click', function (e) {
+                        var parentArray = new Array();
+                        parentArray.push("node" + (parseInt(e.currentTarget.id.substring(4)) - 1) / 2);
+                        getChildren(new Array(), parentArray);
+                        for (var j = 0; j < childrenArray.length; j++) {
+                            var root = e.currentTarget.ownerDocument;
+                            var originalLeafIndex = childrenArray[0].substring(4);
+                            var originalNodeIndex = originalLeafIndex * 2 + 1;
+                            var originalEdgeIndex = originalLeafIndex * 2;
+                            var originalTableIndex = (parseInt(originalLeafIndex) + 1) * 2;
+                            var leafIndex = childrenArray[j].substring(4);
+                            var nodeIndex = leafIndex * 2 + 1;
+                            var edgeIndex = leafIndex * 2;
+                            var tableIndex = (parseInt(leafIndex) + 1) * 2;
+                            var originalNode = root.getElementById("node" + originalNodeIndex);
+                            var node = root.getElementById("node" + nodeIndex);
+                            var originalEdge = root.getElementById("edge" + originalEdgeIndex);
+                            var edge = root.getElementById("edge" + edgeIndex);
+                            var originalTable = root.getElementById("node" + originalTableIndex);
+                            var table = root.getElementById("node" + tableIndex);
+                            var nodeFlag = true;
+                            var edgeFlag = true;
+                            var tableFlag = true;
+                            if (j != 0 && j != 1) {
+                                nodeFlag = (originalNode.getAttribute('opacity') != node.getAttribute('opacity'));
+                                edgeFlag = (originalEdge.getAttribute('opacity') != edge.getAttribute('opacity'));
+                                tableFlag = (originalTable.getAttribute('opacity') != table.getAttribute('opacity'));
+                            }
+                            if (nodeFlag) {
+                                if (node.getAttribute('opacity') == null) {
+                                    node.setAttribute('opacity', '0');
+                                } else {
+                                    node.removeAttribute('opacity');
+                                }
+                            }
+                            if (edgeFlag) {
+                                if (edge.getAttribute('opacity') == null) {
+                                    edge.setAttribute('opacity', '0');
+                                } else {
+                                    edge.removeAttribute('opacity');
+                                }
+                            }
+
+                            if (tableFlag) {
+                                if (table.getAttribute('opacity') == null) {
+                                    table.setAttribute('opacity', '0');
+                                } else {
+                                    table.removeAttribute('opacity');
+                                }
+                            }
+                        }
+                        childrenArray = [];
+                    });
+                }
+
+
+            },
+            resize: function (width, height) {
+                if (!this.isAttached) return;
+                var that = this;
+                var div = that.$.chart || that.shadowRoot.getElementById('chart').firstChild;
+                width = that.width;
+                height = that.height;
+                div.style.width = (typeof width == 'string' || width instanceof String) ? width : width + 'px';
+                div.style.height = (typeof height == 'string' || height instanceof String) ? height : height + 'px';
+                var $graph = $(div).children().first();
+                $graph.ready(function () {  //size adjustment shall be done after ready
+                    // decide stretch width or height to 100%, and other side will be auto
+                    var r_width = 1.0 * $graph.width() / $(that).width(),
+                        r_height = 1.0 * $graph.height() / $(that).height();
+                    if ($graph.prop("tagName") == 'IMG' && r_width < 1.0 && r_height < 1.0) {
+                        // for the case of PNG, if IMG smaller than container, do not stretch, or the PNG will be stretched
+                    } else if ($graph.prop("tagName") == 'TEXTAREA') {
+                        // for the case of ps, plain, xdot, do nothing.
+                    } else {
+                        var side_stretch = r_width > r_height ? 'width' : 'height',
+                            side_auto = r_width > r_height ? 'height' : 'width';
+                        var css = {};
+                        css[side_stretch] = '100%';
+                        css[side_auto] = 'auto';
+                        $graph.css(css);
+                    }
+                });
+            }//resize
+        });
+    </script>
+</dom-module>

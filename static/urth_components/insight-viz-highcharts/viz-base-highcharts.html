@@ -1,0 +1,51 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+
+<dom-module id="chart-base-highchart">
+  <template>
+    <iframe id="chart"></iframe>
+  </template>
+  <script>
+    'use strict';
+    Polymer({
+      is: "chart-base-highchart",
+      behaviors: [
+        InsightVizBehaviors.BasicBehavior,
+        InsightVizBehaviors.HighChartsBehavior,
+        InsightVizBehaviors.LoadDataBehavior
+      ],
+      properties: {
+        defaultOptions: {
+          type: Object, readOnly: true,
+          value: {  // default value to show user some debug information
+            chart: {
+              type: 'pie'
+            },
+            plotOptions: {
+              pie: {
+                shadow: false,
+                center: ['50%', '50%']
+              }
+            },
+            tooltip: {
+              valueSuffix: '%'
+            },
+            credits: false,
+            series: [{
+              name: '~',
+              data: [{ 'name':'If this continues to show, \n check if data is correctly loaded.',
+                'color':"#7cb5ec", 'y': 100}],
+              size: '60%',
+              innerSize: '20%',
+              dataLabels: {
+                distance: -60
+              }
+            }]
+          }//value of default options
+        }//defaultOptions
+      }//properties
+    })
+  </script>
+</dom-module>

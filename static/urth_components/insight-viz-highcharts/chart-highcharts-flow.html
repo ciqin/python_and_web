@@ -1,0 +1,157 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+
+<dom-module id="viz-chart-highcharts-flow">
+    <template>
+        <style>
+            #chart {
+                height: 1200px !important;
+            }
+        </style>
+        <iframe id="chart"></iframe>
+    </template>
+    <script>
+        'use strict';
+        Polymer({
+            is: "viz-chart-highcharts-flow",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readOnly: true,
+                    value: {  // default value to show user some debug information
+                        chart: {
+                            backgroundColor: 'white',
+                            events: {
+
+                            }
+                        },
+                        credits: false,
+                        title: { text:null, },
+                        exporting: { enabled:false }
+                    }//value of default options
+                }//defaultOptions
+            },//properties
+            _updateData: function (data) {
+                this.chart.then(function (chart) {
+                    for (var i = 0; i < data.length; i++) {
+                        var array = data[i].description.split("");
+                        var splitArr = Math.ceil(data[i].description.length / 45);
+                        for (var j = 1; j < splitArr; j++) {
+                            array.splice(45 * j, 0, "<br/>");
+                        }
+                        data[i].description = array.join("");
+                    }
+                    var newDataIndex = [], childBranch = [];
+                    var mainBranch = Array.from(new Set(data.filter(function (d) { if (d.type === "inclusion") { return d } })));
+                    data.map(function (v, i) {
+                        if (v.type === "inclusion") {
+                            newDataIndex.push(i);
+                        }
+                    })
+                    for (var i = 0; i < newDataIndex.length - 1; i++) {
+                        childBranch.push(data.slice(newDataIndex[i] + 1, newDataIndex[i + 1]));
+                    }
+
+                    var maxNumber = childBranch[0].length;
+
+                    for (var i = 0; i < childBranch.length; i++) { if (maxNumber < childBranch[i].length) { maxNumber = childBranch[i].length }; }
+                    var ren =chart.renderer,
+                        colors = ['blue', '#ccc', 'blue', '#000'];
+                    var height = 60, width = 300, padding = 5, border = 2, arrowHeight = 40 * maxNumber;
+                    // SaaS client label
+                    var count = 0;
+                    for (var i = 0; i < mainBranch.length; i++) {
+                        mainBranch[i].description = mainBranch[i].description
+                        ren.label(mainBranch[i].description, 0, (height + padding * 2 + border * 2 + arrowHeight) * i)
+                            .attr({
+                                stroke: 'white',
+                                'stroke-width': border,
+                                width: width,
+                                height: height,
+                                padding: padding,
+                                r: 15
+                            })
+                            .css({
+                                color: '#000'
+                            })
+                            .add()
+                            .shadow(true);
+                        if (i != 0) {
+                            ren.path(['M', (width + padding * 2 + border * 2) / 2, (height + padding * 2 + border * 2) * i + count * arrowHeight, 'L', (width + padding * 2 + border * 2) / 2, ((height + padding * 2 + border * 2) + arrowHeight) * i])
+                                .attr({
+                                    'stroke-width': 2,
+                                    stroke: colors[3]
+                                })
+                                .add();
+                            //   arrow y ;    
+                            ren.path(['M', (width + padding * 2 + border * 2) / 2, ((height + padding * 2 + border * 2) + arrowHeight) * i,
+                                'L', (width + padding * 2 + border * 2) / 2 - 5, ((height + padding * 2 + border * 2) + arrowHeight) * i - 10,
+                                'L', (width + padding * 2 + border * 2) / 2 + 5, ((height + padding * 2 + border * 2) + arrowHeight) * i - 10,
+                                'L', (width + padding * 2 + border * 2) / 2, ((height + padding * 2 + border * 2) + arrowHeight) * i])
+                                .attr({
+                                    'stroke-width': 2,
+                                    fill: colors[3]
+                                })
+                                .add();
+
+                            //   arrow x 
+                            for (var j = 0; j < childBranch[count].length; j++) {
+                                var moveArrow = 0;
+                                if (j == 0) moveArrow = -15;
+                                if (j == childBranch[count].length - 1) moveArrow = 15;
+                                ren.path(['M', (width + padding * 2 + border * 2) / 2,
+                                    (height + padding * 2 + border * 2) * i + count * arrowHeight + arrowHeight / (childBranch[count].length + 1) * (j + 1) + moveArrow,
+                                    'L', (width + padding * 2 + border * 2) / 2 + width * 3 / 4,
+                                    (height + padding * 2 + border * 2) * i + count * arrowHeight + arrowHeight / (childBranch[count].length + 1) * (j + 1) + moveArrow])
+                                    .attr({
+                                        'stroke-width': 2,
+                                        stroke: colors[3]
+                                    })
+                                    .add();
+                                ren.path(['M', (width + padding * 2 + border * 2) / 2 + width * 3 / 4,
+                                    (height + padding * 2 + border * 2) * i + count * arrowHeight + arrowHeight / (childBranch[count].length + 1) * (j + 1) + moveArrow,
+                                    'L', (width + padding * 2 + border * 2) / 2 + width * 3 / 4 - 10, (height + padding * 2 + border * 2) * i + count * arrowHeight + arrowHeight / (childBranch[count].length + 1) * (j + 1) + moveArrow - 5,
+                                    'L', (width + padding * 2 + border * 2) / 2 + width * 3 / 4 - 10, (height + padding * 2 + border * 2) * i + count * arrowHeight + arrowHeight / (childBranch[count].length + 1) * (j + 1) + moveArrow + 5,
+                                    'L', (width + padding * 2 + border * 2) / 2 + width * 3 / 4, (height + padding * 2 + border * 2) * i + count * arrowHeight + arrowHeight / (childBranch[count].length + 1) * (j + 1) + moveArrow])
+                                    .attr({
+                                        'stroke-width': 2,
+                                        fill: colors[3]
+                                    })
+                                    .add();
+                                if (j == 0) moveArrow = -35;
+                                if (j == childBranch[count].length - 1) moveArrow = 25;
+                                var moveMaddle = 0;
+                                if (childBranch[count].length == 4 && j == 1) moveMaddle = -14;
+                                if (childBranch[count].length == 4 && j == 2) moveMaddle = 5;
+                                ren.label(childBranch[count][j].description, (width + padding * 2 + border * 2) / 2 + width * 3 / 4, (height + padding * 2 + border * 2) * i + count * arrowHeight + arrowHeight / (childBranch[count].length + 1) * (j + 1) + moveArrow + moveMaddle - arrowHeight / childBranch[count].length / 2)
+                                    .attr({
+                                        stroke: 'white',
+                                        'stroke-width': border,
+                                        width: width,
+                                        height: arrowHeight / childBranch[count].length,
+                                        padding: padding,
+                                        r: 15
+                                    })
+                                    .css({
+                                        color: '#000'
+                                    })
+                                    .add()
+                                    .shadow(true);
+                            }
+                            count++;
+                        }
+                    }
+                })
+                var options = {};
+                return 1;
+
+            }
+        })
+    </script>
+</dom-module>

@@ -1,0 +1,128 @@
+﻿<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+<!--
+Represents a widget that draws a donut chart (pie chart with two levels).
+
+Original DataFrame Standard Format:
+-----------------------------------------------
+|  Level_Detailed  |  Level_Higher  |  Value  |
+-----------------------------------------------
+|  Level_A_1       |  Level_B_1     |  0.01   |
+|  Level_A_2       |  Level_B_1     |  0.01   |
+|  Level_A_3       |  Level_B_2     |  0.01   |
+|  Level_A_4       |  Level_B_2     |  0.01   |
+-----------------------------------------------
+
+@group Insight-Viz Chart
+@element chart-pie-hierarchy
+@requires HighCharts
+-->
+
+<dom-module id="viz-chart-donut">
+    <template>
+        <iframe id="chart"></iframe>
+    </template>
+
+    <script>
+        var pieSize = 75.0;
+        Polymer({
+            is: "viz-chart-donut",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readonly: true,
+                    value: {
+                        chart: {
+                            type: 'pie'
+                        },
+                        credits: false,
+                        plotOptions: {
+                            pie: {
+                                shadow: false,
+                                center: ['50%', '50%'],
+                                allowPointSelect: true,
+                                cursor: 'pointer',
+                                dataLabels: {
+                                    enabled: true,
+                                    format: '<b>{point.name}</b>'
+                                }
+                            }
+                        },
+                        series: [{
+                        }, {
+                        }]
+                    }//default value
+                }//defaultOptions
+            },//properties
+            _updateData: function (data) {
+                var colors = ["#7cb5ec", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354", "#2b908f", "#f45b5b", "#91e8e1"];
+
+                var color_map = {}, inner_map = {},
+                    i_color = 0;
+                
+                var level_index = data.columns.indexOf('category');
+                var importance_index = data.columns.indexOf('importance');
+
+                for (var d = 0; d < data.data.length; d++) {
+                    var level_name = data.data[d][level_index];  //Higher Level Name
+                    if (!(level_name in inner_map)) inner_map[level_name] = 0;
+                    inner_map[level_name] += +data.data[d][importance_index] || 0;
+                    if (color_map[level_name])continue;
+                    color_map[level_name] = colors[i_color];
+                    i_color++;
+                }
+
+                var series = [
+                    {   //template for data series
+                        name: data.columns[level_index],
+                        innerSize: 0,
+                        size: pieSize / 2 + "%",
+                        data: [],
+                        dataLabels: {
+                            color: '#fff',
+                            distance: -50
+                        }
+                    }, {   //template for data series
+                        name: data.columns[0],
+                        size: pieSize + "%",
+                        innerSize: pieSize / 2 + "%",
+                        data: [],
+                        dataLabels: {
+                            color: '#000'
+                            //distance: 30 * (data.columns.length - i)
+                        }
+                    }
+                ];
+
+                this.highcharts.then(function (Highcharts) {
+
+
+                    for (var i = 0; i < data.data.length; i++) {
+                        var level_name = data.data[i][level_index];
+                        if (level_name in inner_map) {
+                            series[0].data.push({
+                                name: level_name,
+                                y: parseFloat(inner_map[level_name].toFixed(3)),
+                                color: Highcharts.Color(color_map[level_name]).brighten(0.2).get()
+                            });
+                            delete inner_map[level_name];
+                        }
+
+                        series[1].data.push({
+                            name: data.data[i][0],
+                            y: parseFloat((+data.data[i][importance_index]).toFixed(3)),
+                            color: Highcharts.Color(color_map[data.data[i][level_index]]).brighten(0.2).get()
+                        });
+                    }
+                });
+                return series;
+            }
+        });
+    </script>
+</dom-module>

@@ -1,0 +1,177 @@
+﻿<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+
+<dom-module id="viz-chart-risk-model-colored">
+    <template>
+        <iframe id="chart"></iframe>
+    </template>
+    <script>
+		var fullcolors = ['rgba(0, 0, 0, 1)','rgba(223, 83, 83, 1)','rgba(119, 152, 191, 1)','rgba(36,157,127, 1)','rgba(255, 127, 14, 1)', 'rgba(255, 0, 255, 1)', 'rgba(0, 0, 0, 1)','rgba(223, 83, 83, 1)','rgba(119, 152, 191, 1)','rgba(36,157,127, 1)','rgba(255, 127, 14, 1)'];
+        var colors = ['rgba(0, 0, 0, .5)','rgba(223, 83, 83, .5)','rgba(119, 152, 191, .5)','rgba(36,157,127, .5)','rgba(255, 127, 14, .5)', 'rgba(255, 0, 255, 0.5)'];
+        'use strict';
+        Polymer({
+            is: "viz-chart-risk-model-colored",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readOnly: true,
+                    value: {  // default value to show user some debug information
+                        chart: {
+                            type: 'columnrange',
+                            inverted: true
+                        },
+                        credits: false,
+                        xAxis: [{
+                            categories: [
+                                "Loading Variable  0...",
+                                "Loading Variable  1...",
+                                "Loading Variable  2...",
+                                "Loading Variable  3...",
+                                "Loading Variable  4...",
+                                "Loading Variable  5...",
+                                "Loading Variable  6...",
+                                "Loading Variable  7...",
+                                "Loading Variable  8...",
+                                "Loading Variable  9...",
+                                "Loading Variable 10..."
+                            ]
+                        }],
+
+                        yAxis: [{
+                            title: {
+                                enabled: false
+                            },
+                            labels: {
+                                enabled: false
+                            },
+                            min: 0,
+                            lineWidth: 0,
+                            gridLineWidth: 0,
+                            minorGridLineWidth: 0,
+                            lineColor: 'transparent',
+                            minorTickLength: 0,
+                            tickLength: 0
+                        }, {
+                            title: {
+                                enabled: false
+                            },
+                            labels: {
+                                enabled: true
+                            },
+                            min: 0,
+                            lineWidth: 0,
+                            gridLineWidth: 0,
+                            minorGridLineWidth: 0,
+                            lineColor: 'transparent',
+                            minorTickLength: 0,
+                            tickLength: 0
+                        }],
+                        plotOptions: {
+                            columnrange: {
+                                dataLabels: {
+                                    enabled: false
+                                },
+                                pointWidth: 10,
+                                colorByPoint: true,
+                                colors: colors,
+                                tooltip: {
+                                    headerFormat: '<span style="font-size:12px">{point.key}</span><br/>'
+                                }
+                            },
+                            scatter: {
+                                marker: {
+                                    symbol: 'diamond',
+                                    radius: 10
+                                },
+                                tooltip: {
+                                    headerFormat: '<span style="font-size:12px">{point.key}</span><br/>',
+                                    pointFormat: '<span style="color:{point.color}">\u25CF</span> {series.name}: <b>{point.y}</b><br/>'
+                                }
+                            },
+                            spline: {
+                                lineWidth: 1,
+                                marker: {
+                                    enabled: false
+                                },
+                                color: 'rgba(192,192,192,1)',
+                                tooltip: {
+                                    headerFormat: '<span style="font-size:12px">{point.key}</span><br/>',
+                                    pointFormat: ''
+                                }
+                            }
+                        },
+
+                        legend: {
+                            enabled: false
+                        },
+
+                        series: [{
+                            type: 'spline',
+                            yAxis: 1,
+                            data: []
+                        }, {
+                            name: 'Confidance Interval',
+                            data: []
+                        }, {
+                            name: 'OR',
+                            type: 'scatter',
+                            yAxis: 1,
+                            data: []
+                        }]
+                    }//value of default options
+                }//defaultOptions
+            },//properties
+
+            _updateData: function (data) {
+                var options = {};
+                var oddsratioIdx = data.columns.indexOf('odds_ratio');
+                var pvaluesIdx = data.columns.indexOf('pvalues');
+                var cilowIdx = data.columns.indexOf('ci_low');
+                var cihighIdx = data.columns.indexOf('ci_high');
+                var categoriesdata = [];
+                var seriesdata = [];
+                for (var i = 0; i < data.index.length; i++) {
+                    categoriesdata.push(data.index[i] + " (p-value=" + parseFloat(+data.data[i][pvaluesIdx].toFixed(3)) + ")");
+                    seriesdata.push(+data.data[i][cihighIdx].toFixed(3));
+                }
+                var max = Math.max.apply(null, seriesdata);
+                options['xAxis'] = {
+                    categories: categoriesdata
+                };
+                options['yAxis'] = [{},{}];
+                options['yAxis'][0]['max']  = max;
+                options['yAxis'][1]['max']  = max;
+                var series = [];
+                series.push({
+                    type: 'spline',
+                    yAxis: 1,
+                    data: data.index.map(function (d) {
+                        return 1;
+                    })
+                });
+                series.push({
+                    name: 'Confidance Interval',
+                    data: data.data.map(function (d) {
+                        return [+d[cilowIdx].toFixed(3), +d[cihighIdx].toFixed(3)];
+                    })
+                });
+                series.push({
+                    name: 'OR',
+                    type: 'scatter',
+                    yAxis: 1,
+                    data: data.data.map(function (d,i) {
+                        return {y:+d[oddsratioIdx].toFixed(3),marker:{fillColor:fullcolors[i]}};
+                    })
+                });
+                options['series'] = series;
+                return options;
+            }
+        })
+    </script>
+</dom-module>

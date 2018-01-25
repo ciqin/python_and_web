@@ -1,0 +1,228 @@
+﻿<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+<!--
+Represents a widget that draws a column-pie mixed chart.
+
+Original DataFrame Standard Format:
+----------------------
+|   Case   |  Score  |
+----------------------
+|  1       |  0.3    |
+|  2       |  0.2    |
+|  3       |  0.1    |
+|  4       |  0.01   |
+----------------------
+
+@group Insight-Viz Chart
+@element chart-highcharts-column-pie
+@requires HighCharts
+-->
+
+<dom-module id="viz-chart-highcharts-column-pie">
+    <template>
+        <div style="display: inline-block; margin-left: 50px;"></div>Low Risk: Score <<input type="text"  style="width:50px;"  id="low" onblur= "if( ! /^(0.\d+)$/.test(this.value)){this.value='';}">
+        <div style="display: inline-block; margin-left: 10px;"></div>High Risk: Score ><input type="text" style="width:50px;" id="high" onblur= "if( ! /^(0.\d+)$/.test(this.value)){this.value='';}">
+        <input type="button" value="Update" on-tap="handleTap">
+        <iframe id="chart"></iframe>
+    </template>
+    <script>
+        'use strict';
+        Polymer({
+            is: "viz-chart-highcharts-column-pie",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readOnly: true,
+                    value: {  // default value to show user some debug information
+                        xAxis: {
+                            type: 'category',
+                            title: {
+                                text: 'Cases'
+                            }
+                        },
+                        yAxis: {
+                            title: {
+                                text: 'Risk Score'
+                            },
+                            max: 1
+                        },
+                        tooltip: {
+                            headerFormat: '<span style="font-size:12px">{point.key}: {point.y}</span><table>',
+                            pointFormat: ''
+                        },
+                        legend: {
+                            enabled: false
+                        },
+                        plotOptions: {
+                            series: {
+                                turboThreshold: 20000
+                            },
+                            pie: {
+                                allowPointSelect: true,
+                                cursor: 'pointer',
+                                dataLabels: {
+                                    format: '{point.name}: <b>{point.y} ({point.percentage:.1f}%)</b>'
+                                }
+                            }
+                        },
+                        credits: false,
+                        series: [{
+                            colorByPoint: true,
+                            type: 'column',
+                            data: [{
+                            }]
+                        }, {
+                            type: 'pie',
+                            name: 'Case Number',
+                            data: [{
+                            }, {
+                            }, {
+                            }],
+                            center: ["60%", "50%"],
+                            size: 170
+                        }]
+                    }//value of default options
+                },//defaultOptions
+                thresholdHigh: {type: Number, value: 0.50},
+                thresholdLow: {type: Number, value: 0.25},
+                piePositionLeft: {type: String, value: '60%'},
+                piePositionTop: {type: String, value: '40%'},
+                pieSize: {type: String, value: '170px'}
+            },//properties
+
+            _updateData: function (data) {
+                var that = this;
+
+                var options = {};
+
+                this.$$("#high").value = that.thresholdHigh;
+                this.$$("#low").value = that.thresholdLow;
+                this.seriesData = data.data;
+
+                var coldata = data.data.map(function (rd, i) {
+                    var d = {};
+                    d.name = '' + (i + 1);
+                    d.y = Math.round(+rd[0] * 1000) / 1000;
+                    if (d.y > that.thresholdHigh) {
+                        d.color = "rgba(255,0,0,0.4)";
+                    } else if (d.y > that.thresholdLow) {
+                        d.color = "rgba(255,165,0,0.4)";
+                    } else {
+                        d.color = "rgba(0,128,0,0.4)";
+                    }
+                    return d;
+                });
+                var leveldata = {
+                    high: coldata.filter(function (d) {
+                        return d.y > that.thresholdHigh
+                    }).length,
+                    medium: coldata.filter(function (d) {
+                        return (d.y <= that.thresholdHigh && d.y > that.thresholdLow)
+                    }).length,
+                    low: coldata.filter(function (d) {
+                        return d.y <= that.thresholdLow
+                    }).length
+                };
+
+                options['series'] = [
+                    {
+                        colorByPoint: true,
+                        type: 'column',
+                        data: coldata
+                    },
+                    {
+                        type: 'pie',
+                        name: 'Case Number',
+                        data: [{
+                            name: 'High',
+                            y: leveldata.high,
+                            sliced: true,
+                            selected: true,
+                            color: 'rgba(255,0,0,0.7)'
+                        }, {
+                            name: 'Medium',
+                            y: leveldata.medium,
+                            color: 'rgba(255,165,0,0.7)'
+                        }, {
+                            name: 'Low',
+                            y: leveldata.low,
+                            color: 'rgba(0,128,0,0.7)'
+                        }],
+                        center: [that.piePositionLeft, that.piePositionTop],
+                        size: that.pieSize
+                    }];
+
+                return options;
+            },
+            handleTap: function() {
+                if((/^(0.\d+)$/.test(this.$$("#high").value)) && (/^(0.\d+)$/.test(this.$$("#low").value))){
+                    var high = parseFloat(this.$$("#high").value);
+                    var low = parseFloat(this.$$("#low").value);
+                    var coldata = this.seriesData.map(function (rd, i) {
+                        var d = {};
+                        d.name = '' + (i + 1);
+                        d.y = Math.round(+rd[0] * 1000) / 1000;
+                        if (d.y > high) {
+                            d.color = "rgba(255,0,0,0.4)";
+                        } else if (d.y > low) {
+                            d.color = "rgba(255,165,0,0.4)";
+                        } else {
+                            d.color = "rgba(0,128,0,0.4)";
+                        }
+                        return d;
+                    });
+                    var leveldata = {
+                        high: coldata.filter(function (d) {
+                            return d.y > high
+                        }).length,
+                        medium: coldata.filter(function (d) {
+                            return (d.y <= high && d.y > low)
+                        }).length,
+                        low: coldata.filter(function (d) {
+                            return d.y <= low
+                        }).length
+                    };
+
+                    var piePositionLeft = this.piePositionLeft;
+                    var piePositionTop = this.piePositionTop;
+                    var pieSize = this.pieSize;
+                    //update chart
+                    this.chart.then(function (chart) {
+                        chart.series[0].update({
+                            colorByPoint: true,
+                            type: 'column',
+                            data: coldata
+                        });
+                        chart.series[1].update({
+                            type: 'pie',
+                            name: 'Case Number',
+                            data: [{
+                                name: 'High',
+                                y: leveldata.high,
+                                sliced: true,
+                                selected: true,
+                                color: 'rgba(255,0,0,0.7)'
+                            }, {
+                                name: 'Medium',
+                                y: leveldata.medium,
+                                color: 'rgba(255,165,0,0.7)'
+                            }, {
+                                name: 'Low',
+                                y: leveldata.low,
+                                color: 'rgba(0,128,0,0.7)'
+                            }],
+                            center: [piePositionLeft, piePositionTop],
+                            size: pieSize
+                        });
+                    })
+                }
+            }            
+        })
+    </script>
+</dom-module>

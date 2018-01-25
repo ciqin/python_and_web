@@ -1,0 +1,249 @@
+<script>
+    var InsightVizBehaviors = InsightVizBehaviors || {};
+    (function () {
+        'use strict';
+        InsightVizBehaviors.HighChartsBehavior = {
+            properties: {
+                width: {type: String, value: "800px"},
+                height: {type: String, value: "800px"},
+                type: {type: String, value: "chart"},    // one of {chart, stock, map}, `chart` for default.
+                defaultOptions: {type: Object, readOnly: true}    // abstract
+            },//props
+            observers: [
+                //'updateOptions(options.*)',
+                'resize(width, height)'
+            ],//observers
+            created: function () {
+                this.base = 'highcharts/highcharts';
+                this.modules = ['highcharts/modules/exporting', 'highcharts/highcharts-more'];
+                this.promises = this.promises || [];
+            },
+            ready: function () {
+                // for stockChart and mapChart, this line must be in ready(), not created()!
+                if (this.type && this.type != 'chart') this.base = 'highcharts/high' + this.type;
+
+                var that = this;
+                this.frame = this.$.chart || this.shadowRoot.getElementById('chart').firstChild;
+                this.frame.style.border = 0;  //hide the border for iframe
+                this.frame.style.display = 'block'; //fix the 5px height
+
+                this.window = new Promise(function (resolve, reject) {
+                    function checkFlag() {
+                        if (!that.frame.contentWindow || !that.frame.contentDocument) {
+                            window.setTimeout(checkFlag, 200);
+                        } else {
+                            resolve(that.frame.contentWindow);
+                        }
+                    }
+
+                    checkFlag();
+                });
+                this.window.then(function (_window) {
+                    var _document = that.frame.contentDocument || that.frame.contentWindow;
+                    if (_document.document) _document = _document.document;
+                    //# Load require.js inside iframe
+                    var require_path = that.resolveUrl('../requirejs/require.js');
+                    var src = _document.createElement('script');
+                    src.type = "text/javascript";
+                    src.textContent = '(function(){' +
+                        'var script = document.createElement("script");' +
+                        'script.type = "text/javascript";' +
+                        'script.src = "' + require_path + '";' +
+                        'script.defer = script.async = false;' +
+                        'document.head.appendChild(script);' +
+                        '})();';
+                    _document.head.appendChild(src);
+
+                    /* DEBUG
+                     src = _document.createElement('script');
+                     src.type = "text/javascript";
+                     src.textContent = '(function(){     window.onload = function () {' +
+                     'console.log("@@@@@@@@", document.readyState, window.require);' +
+                     '};    })();';
+                     _document.head.appendChild(src);
+                     */
+
+                    //# Set body style for iFrame
+                    var css = 'html,body{margin:0;padding:0;border:0;overflow:hidden;}',
+                        style = _document.createElement('style');
+                    style.type = 'text/css';
+                    if (style.styleSheet) {
+                        style.styleSheet.cssText = css;
+                    } else {
+                        style.appendChild(document.createTextNode(css));
+                    }
+                    _document.head.appendChild(style);
+
+                    var container = _document.createElement('div');
+                    container.id = 'highchart';
+                    _document.body.appendChild(container);
+                });
+
+                this.container = this.window.then(function (_window) {  //# Add a DIV for chart
+                    var _document = _window.document;
+                    return new Promise(function (resolve, reject) {
+                        resolve(_document.querySelector('div#highchart'));
+                    });
+                });
+
+                var req = this.window.then(function (_window) {
+                    return new Promise(function (resolve, rejct) {
+                        function checkFlag() {
+                            if (!_window || !_window.requirejs) {
+                                window.setTimeout(checkFlag, 1200);
+                            } else {
+                                resolve(_window.require);
+                            }
+                        }
+
+                        checkFlag();
+                    });
+                });
+
+                this.highcharts = req.then(function (req) {
+                    return new Promise(function (resolve, reject) {
+                        $(that.frame).ready(function () {
+                            req.config({
+                                paths: {'highcharts': that.resolveUrl('../highcharts')}
+                            });
+                            req([that.base], function () {
+                                req(that.modules, function () {
+                                    resolve(that.frame.contentWindow.Highcharts);
+                                });
+                            });
+                        });
+                    });
+                });
+
+                this.highchartsF = this.highcharts.then(function (highcharts) {
+                    var tmp = highcharts
+                        ? (highcharts[that.type] || highcharts[that.type + 'Chart'])
+                        : function () {
+                            console.error('Highcharts> Unable to load charting function for type ', that.type);
+                        };
+                    return Promise.resolve(tmp);
+                });
+
+                that.options = new Promise(function (resolve, reject) {
+                    that.$this = $(that);
+                    var options = $.extend(true, {}, that.defaultOptions || {}); //current options or default value
+                    $.extend(options, that.options);  // Update Options if there is already an user set option.
+                    for (var i = 0; i < that.promises.length; i++)  // Process chained Promises in children elements.
+                        options = (that.promises[i])(options);
+                    for (i = 0; i < that.attributes.length; i++) {  // Update Options by dom element attributes like 'options-*'
+                        var item = that.attributes[i];
+                        if (item && item.name.startsWith('options-'))  //set options based on attributes starts with `options-`
+                            that._assign({options: options}, item.name.split('-'), item.value);
+                    }
+                    resolve(options);
+                });
+
+                this.chart = Promise.all([this.options, this.highchartsF, that.container]).then(function (values) {
+                    var options = values[0], chartF = values[1], container = values[2];
+                    var chart = chartF(container, options);
+                    $(that.frame).width(that.width).height(that.height); // remember the size of self at first
+                    return Promise.resolve(chart);
+                });
+            },
+            attached: function () {
+                var that = this;
+                Promise.all([this.options, this.chart, this.container]).then(function (values) {
+                    that.resize();
+                });
+            },
+            updateOptions: function (updateOptions) {
+                if (!updateOptions || updateOptions === "" || updateOptions.length == 0)
+                    return console.error('Error> Update Options to empty value ', updateOptions, ' for element ', this);
+
+                var that = this;
+                Promise.all([that.options, that.chart]).then(function (values) {
+                    var option = values[0], chart = values[1];
+                    if (updateOptions.path && updateOptions.value && Object.keys(updateOptions.value).length) {    //Update an option
+                        var obj = {options: {}};
+                        that._assign(obj, updateOptions.path.split('.'), updateOptions.value);
+                        console.debug('Update options [', updateOptions.path, '] of chart ', that, ' to ', updateOptions.value);
+                        chart.update(obj.options, true);
+                    } else {
+                        console.debug('Update options of chart ', that, ' to ', updateOptions);
+                        // Highcharts.prototype.update = function (Object options, Boolean redraw) ...
+
+                        //fix bug: if the new option have more series numbers than the original series, 
+                        //the increased series will not be set via chart.update
+                        //chart.update(updateOptions, true);  // items in updateOptions will be merged into current options
+                        if (updateOptions.series != undefined){
+
+                            //also deal with less series number
+                            var oldlen = chart.series.length;
+                            var newlen = updateOptions.series.length;
+                            var diff = oldlen - newlen;
+                            if(diff > 0){ //old > new
+                                for (var i = oldlen; i > newlen; i--){
+                                    chart.series[i-1].remove(true);
+                                }
+                            } else if (diff < 0){
+                                for (var i = oldlen; i < newlen; i ++){
+                                    chart.addSeries({});
+                                }
+                            }
+
+                            chart.update(updateOptions, true);
+                            
+                            // if(updateOptions.series.length <= chart.series.length){
+                            //     //if new series number is smaller or equal, update chart directly with higher performance
+                            //     chart.update(updateOptions, true);
+                            // }else{
+                            //     var seriesData = updateOptions.series;
+                            //     //upate other options first
+                            //     delete updateOptions.series;
+                            //     chart.update(updateOptions, true);
+                            //     //update series
+                            //     while (chart.series.length > 0) {
+                            //       chart.series[0].remove(true);
+                            //     }
+                            //     for (var i = 0; i < seriesData.length; i++) {    
+                            //       chart.addSeries(seriesData[i]);
+                            //     }
+                            // }
+                        }
+                    }
+                });
+            },//function updateOptions
+            updateData: function (data) {  // !!!  This is an abstract function, children elements should implement `_updateData()`
+                var that = this;
+                var update = this._updateData(data);
+                if (!update) {
+                    console.error('Charts Error> `_updateData()` of this webcomponent should return an Array or Object:', this);
+                    return {'title': 'Invalid Chart WebComponent, `_update()` should return an Array or Object'};
+                }
+                update = update.then ? update : Promise.resolve(update);  // ensure update is a Promise
+                update.then(function (updateData) {
+                    if (Object.prototype.toString.call(updateData) === '[object Array]')
+                        updateData = {series: updateData};
+                    that.updateOptions(updateData);
+                });
+            },
+            resize: function (width, height) {
+                if (!this.container) return;
+                width = width || this.$this.width() || this.width;// || (this.frame ? this.frame.style.width : undefined),
+                height = height || this.$this.height() || this.height;// || (this.frame ? this.frame.style.height : undefined);
+                width += (typeof width == 'string' || width instanceof String) ? '' : 'px';
+                height += (typeof height == 'string' || height instanceof String) ? '' : 'px';
+
+                var that = this;
+                var setSize = function (e, w, h) {
+                    if (!e)return;
+                    e.style.width = w;
+                    e.style.height = h;
+                };
+                var frame = this.$.chart || this.shadowRoot.getElementById('chart').firstChild;
+                setSize(frame, width, height);
+                this.container.then(function (container) {
+                    setSize(container, width, height);
+                    that.chart.then(function (chart) {
+                        chart.redraw();
+                    });
+                });
+            }//function resize
+        };
+    })();
+</script>

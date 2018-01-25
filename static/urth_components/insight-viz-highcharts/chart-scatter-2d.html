@@ -1,0 +1,138 @@
+﻿<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+<!--
+Represents a widget that draws a scatter chart (2d, with different group as different color).
+
+Original DataFrame Standard Format:
+---------------------------------------------------------
+|  Index(Optional)  |   X  |   Y  | Grp_Color(Optional) |
+---------------------------------------------------------
+|  ID0001           | 0.01 | 0.04 |    Group_A          |
+|  ID0002           | 0.02 | 0.03 |    Group_A          |
+|  ID0003           | 0.03 | 0.02 |    Group_B          |
+|  ID0004           | 0.04 | 0.01 |    Group_C          |
+---------------------------------------------------------
+Notice: Grp_Color and Grp_Shape are independent
+
+@group Insight-Viz Chart
+@element chart-scatter-2d
+@requires HighCharts
+-->
+
+<dom-module id="viz-chart-scatter-2d">
+    <template>
+        <iframe id="chart"></iframe>
+    </template>
+
+    <script>
+        Polymer({
+            is: "viz-chart-scatter-2d",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readonly: true,
+                    value: {
+                        chart: {
+                            type: 'scatter',
+                            zoomType: 'xy'
+                        },
+                        xAxis: {
+                        },
+                        yAxis: {
+
+                        },
+                        legend: {
+                            layout: 'vertical',
+                            align: 'left',
+                            verticalAlign: 'top',
+                            x: 100,
+                            y: 70,
+                            floating: true,
+                            //backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF',
+                            borderWidth: 1
+                        },
+                        plotOptions: {
+
+                        },
+                        credits: false,
+                        series: [{
+                        }, {
+                        }]
+                    }//default value
+                }//defaultOptions
+            },//properties
+            _updateData: function (data) {
+                var groupsArray = Array.from(new Set(data.data.map(function (d) { return d[2] })));
+                var seriesData = [];
+                for (var i = 0; i < groupsArray.length; i++) {
+                    var groupsData = [];
+                    for (var j = 0; j < data.data.length; j++) {
+                        if (data.data[j][2] == groupsArray[i]) {
+                            groupsData.push([data.data[j][0], data.data[j][1]]);
+                        }
+                    }
+                    seriesData.push(groupsData);
+                }
+                var options = {};
+                var colors = [
+                    "rgba(223, 83, 83, .5)",
+                    "rgba(119, 152, 191, .5)"
+                ];
+                var series = [];
+                for (var i = 0; i < seriesData.length; i++) {
+                    series.push({
+                        name: data.columns[2].charAt(0).toUpperCase() + data.columns[2].slice(1) + ':' + (i == 0 ? groupsArray[0] : groupsArray[1]),
+                        color: colors[i],
+                        data: seriesData[i]
+                    });
+                }
+                options['xAxis'] = {
+                    title: {
+                        enabled: true,
+                        text: data.columns[0]
+                    },
+                    startOnTick: true,
+                    endOnTick: true,
+                    showLastLabel: true
+                }
+                options['yAxis'] = {
+                    title: {
+                        text: data.columns[1]
+                    }
+                }
+                options['plotOptions'] = {
+                    scatter: {
+                        marker: {
+                            radius: 5,
+                            states: {
+                                hover: {
+                                    enabled: true,
+                                    lineColor: 'rgb(100,100,100)'
+                                }
+                            }
+                        },
+                        states: {
+                            hover: {
+                                marker: {
+                                    enabled: false
+                                }
+                            }
+                        },
+                        tooltip: {
+                            headerFormat: '<b>{series.name}</b><br>',
+                            pointFormat: data.columns[0]+':{point.x}, '+data.columns[1]+':{point.y}'
+                        }
+                    }
+                }
+                options['series'] = series;
+                return options;
+            }
+        });
+    </script>
+</dom-module>

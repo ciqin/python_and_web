@@ -1,0 +1,356 @@
+﻿<link rel="import" href="../insight-viz-base/viz-base-behavior-echarts.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+
+<dom-module id="viz-chart-map-multi-dimension">
+    <template>
+        <div style="margin: 0 0 -55px 5px; z-index:9; position:absolute;">
+            <table style="border:none">
+                <tr>
+                    <td><label>Circle Size:</label></td>
+                    <td><select value="{{dim.size::change}}">
+                        <option value="">Please select ...</option>
+                        <template is="dom-repeat" items="{{columns}}">
+                            <option value="{{index}}">{{item.name}}</option>
+                        </template>
+                    </select></td>
+                </tr>
+                <tr>
+                    <td><label>Color Darkness:</label></td>
+                    <td><select value="{{dim.color::change}}">
+                        <option value="">Please select ...</option>
+                        <template is="dom-repeat" items="{{columns}}">
+                            <option value="{{index}}">{{item.name}}</option>
+                        </template>
+                    </select></td>
+                </tr>
+            </table>
+        </div>
+        <div id="chart" style="z-index:1"></div>
+    </template>
+
+    <script>
+        'use strict';
+        Polymer({
+            is: "viz-chart-map-multi-dimension",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.EChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            observers: [
+                '__update_dim(dim.*)'
+            ],
+            properties: {
+                dim: {
+                    type: Object,
+                    value: {size: "0", color: "1"},
+                    notify: true
+                },
+                columns: {
+                    type: Array,
+                    value: []
+                },
+                colorHighlight: {
+                    type: Array,
+                    value: ['#ff2200', 'yellow', '#00ddff']//['#00ccff', '#f35833']
+                },
+                colorFadeout: {
+                    type: Array,
+                    value: ['#444']
+                },
+                mapArea: {
+                    type: String,
+                    value: 'china'
+                },// map-area: 'china', 'world', 'province/<prov_name>'
+                defaultOptions: {
+                    type: Object,
+                    value: {
+                        title: {
+                            text: 'Map Visualization with Multi-Dimension Data',
+                            subtext: '',
+                            left: 'center',
+                            textStyle: {color: '#111'}
+                        },
+                        geo: {
+                            map: 'china',
+                            zoom: 1.2,
+                            roam: true,
+                            label: {
+                                normal: {
+                                    show: true,
+                                    textStyle: {
+                                        color: '#444'
+                                    }
+                                },
+                                emphasis: {
+                                    show: true,
+                                    textStyle: {
+                                        color: '#fff'
+                                    }
+                                }
+                            },
+                            itemStyle: {
+                                normal: {
+                                    areaColor: '#ddd',
+                                    borderColor: '#333'
+                                },
+                                emphasis: {
+                                    areaColor: '#444'
+                                }
+                            }
+                        },
+                        animation: true,
+                        animationDuration: 1000,
+                        animationEasing: 'cubicInOut',
+                        animationDurationUpdate: 1000,
+                        animationEasingUpdate: 'cubicInOut',
+                        toolbox: {
+                            feature: {
+                                saveAsImage: {show: true, title: 'Save Image'},
+                                dataView: {readOnly: true, title: 'Data', lang: ['Data View', 'Close', 'Refresh']}
+                            }
+                        },
+                        grid: {
+                            right: 40,
+                            top: 100,
+                            bottom: 40,
+                            width: '30%'
+                        }
+                    }//default value
+                }//defaultOptions
+            },//properties
+            created: function () {
+                var that = this;
+                var thenRegMap = function (options) {
+                    var url_map = '../echarts/map/json/' + that.mapArea + '.json';
+                    return new Promise(function (resolve, reject) {
+                        $.get(that.resolveUrl(url_map), function (mapData) {
+                            that.echarts.then(function (echarts) {
+                                echarts.registerMap(that.mapArea, mapData);
+                            });
+                            console.debug('ECharts> map data registered for', that.mapArea, mapData);
+                            $.extend(true, options, {
+                                geo: {
+                                    map: that.mapArea
+                                }
+                            });
+                            resolve(options);
+                        });
+                    });
+                };
+                this.promises.push(thenRegMap);
+
+                this._pCities = new Promise(function (resolve, reject) {
+                    if (that.mapArea && that.mapArea != 'china' && !that.mapArea.startsWith('province/'))
+                        resolve({});  // area not in china
+                    else if (that._geo_data && Object.keys(that._geo_data).length)
+                        resolve(that._geo_data);
+                    else
+                        $.get(that.resolveUrl('../echarts/map/json/china-cities.json'), function (cities) {
+                            that._geo_data = {};
+                            if (typeof cities == "string")
+                                cities = JSON.parse(cities);
+                            cities.features.forEach(function (val, idx) {
+                                that._geo_data[val.properties.name] = val.properties.cp;
+                            });
+                            resolve(that._geo_data);
+                        }).fail(function () {
+                            console.error('Error> Fail to load cities coordinate!');
+                            reject({});
+                        });
+                });
+            },//function created
+            _updateData: function (data) {
+                var that = this;
+                return this._pCities.then(function (cities) {
+                    var series_data = [],
+                        column_desc = [],
+                        unresolved_cities = [];
+                    data.columns.forEach(function (c, idx) {
+                        column_desc.push({min: Number.MAX_VALUE, max: Number.MIN_VALUE, name: c});
+                    });
+                    data.data.forEach(function (row, idx) {
+                        var city_name = data.index[idx].split('-');
+                        city_name = city_name[city_name.length - 1];
+                        for (var i = 2; i <= city_name.length; i++) {
+                            var fuzzy_city = city_name.slice(0, i);
+                            var city_coord = cities[fuzzy_city];
+                            if (!!city_coord) {
+                                var vector = city_coord.slice().concat(row);
+                                series_data.push({name: city_name, value: vector});
+
+                                row.forEach(function (val, icol) {
+                                    var tmp = column_desc[icol];
+                                    if (val < tmp.min) column_desc[icol].min = val;
+                                    else if (val > tmp.max) column_desc[icol].max = val;
+                                });
+                                break;
+                            }
+                            if (i == city_name.length)
+                                unresolved_cities.push(city_name);
+                        }
+                    });
+                    console.warn("Unable to match names of these cities", unresolved_cities, "!");
+                    that.columns = column_desc;
+                    return that.__update_series(series_data);// return updateOption
+                }).then(function (opt) {
+                    var pDim = that.__update_dim();
+                    return pDim.then(function (visual_map) {
+                        Object.assign(opt, visual_map);
+                        return opt;
+                    });
+                });
+            },//function _updateData
+            __update_series: function (data_series) {
+                var that = this;
+                var f_size = function (vector) {
+                    var i_dim = Number.parseInt(that.dim.size);
+                    var dim = that.columns[i_dim];
+
+                    var v = vector[i_dim + 2];
+                    v = (1.0 * v - dim.min) / (1.0 * dim.max - dim.min);
+                    v = Math.sqrt(v);
+                    return Math.max(v * 81.0, 3.0);
+                };
+                var f_formatter = function (v) {
+                    var tip = $('<table>').append($('<tr><td><b>' + v.name + '</b></td><td></td></tr>'));
+                    v.value.forEach(function (v, idx) {
+                        if (idx < 2)return;  //first two dims are lat/long
+                        tip.append($('<tr><td>' + that.columns[idx - 2].name + '</td><td>' + v + '</td></tr>'));
+                    });
+                    return tip[0].outerHTML;
+                };
+
+                return {
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: f_formatter
+                    },
+                    series: [
+                        {
+                            type: 'scatter',
+                            name: 'Score',
+                            coordinateSystem: 'geo',
+                            data: data_series,
+                            symbolSize: f_size,
+                            itemStyle: {
+                                normal: {
+                                    color: this.colorHighlight[0]
+                                }
+                            },
+                            label: {
+                                normal: {
+                                    formatter: function (x) {
+                                        var t = x.name.split('-');
+                                        return t[t.length - 1];
+                                    },
+                                    position: 'right',
+                                    show: false
+                                },
+                                emphasis: {
+                                    show: false
+                                }
+                            }
+                        }
+                    ]//series
+                };
+            }, // __update_series
+            __update_dim: function (dim) {
+                //Notice: if set visual_map before series, ECharts visual map does not work
+                if (!this.isAttached) return;
+
+                if(this.dim.size && this.dim.size.length==0)return;
+                if(this.dim.color && this.dim.color.length==0)return;
+
+                var that = this;
+                var p = new Promise(function (resolve, reject) {
+                    if (!that.columns || !that.columns.length) resolve({});
+
+                    var dim_size = that.columns[that.dim.size],
+                        dim_color = that.columns[that.dim.color];
+                    var visual_map = [
+                        {
+                            dimension: 2 + Number.parseInt(that.dim.size),  // first two dim are long/lat
+                            text: ['Circle Size:\n' + dim_size.name],
+                            min: dim_size.min,
+                            max: dim_size.max,
+                            range: [dim_size.min, dim_size.max],
+
+                            left: 'left',
+                            top: '10%',
+                            itemWidth: 30,
+                            itemHeight: 200,
+                            calculable: true,
+                            precision: 2,
+                            textGap: 20,
+                            textStyle: {
+                                color: '#111'
+                            },
+                            inRange: {
+                                symbolSize: [3.0, 81.0]
+                            },
+                            outOfRange: {
+                                symbolSize: [3.0, 81.0],
+                                color: ['rgba(255,255,255,.2)']
+                            },
+                            controller: {
+                                inRange: {
+                                    color: that.colorHighlight[0]
+                                },
+                                outOfRange: {
+                                    color: that.colorFadeout
+                                }
+                            }
+                        }, {
+                            dimension: 2 + Number.parseInt(that.dim.color),    // first two dim are long/lat
+                            text: ['Color Darkness:\n' + dim_color.name],
+                            min: dim_color.min,
+                            max: dim_color.max,
+                            range: [dim_color.min, dim_color.max],
+
+                            left: 'left',
+                            bottom: '5%',
+                            itemHeight: 200,
+                            calculable: true,
+                            precision: 2,  //two decimal places
+                            textGap: 20,
+                            textStyle: {
+                                color: '#000'
+                            },
+                            inRange: {
+                                //color: that.colorHighlight,  //do not use this if colorHighlight is a well defined bar
+                                colorHue: [240, 0],
+                                colorSaturation: [0.8, 1]
+                                //colorLightness: [0.2, 0.9],
+                                //opacity: [0.2, 0.8] //do not set this if using HSL, or it will make color var ugly
+                            },
+                            outOfRange: {
+                                color: ['rgba(255,255,255,.2)']
+                            },
+                            controller: {
+                                inRange: {
+                                    color: that.colorHighlight
+                                },
+                                outOfRange: {
+                                    color: that.colorFadeout
+                                }
+                            }
+                        }]; //visualMap
+                    var ret = {visualMap: visual_map};
+                    resolve(ret);
+                });
+
+                if (dim)   // user click select box to trigger dim change event
+                    p.then(function (ret) {
+                        that.chart.then(function (chart) {
+                            chart.setOption(ret);
+                        })
+                    });
+                else     // called by the promise in __updateData()
+                    return p;
+            }// __update_dim
+        })
+        ;//Polymer
+    </script>
+</dom-module>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Insight-Viz Charts Gallery</title>
+    <script src="/static/urth_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="/static/urth_components/jquery/dist/jquery.min.js"></script>
+    <script src="/static/urth_components/bootstrap/dist/js/bootstrap.min.js"></script>
+    <link href="/static/urth_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="import" href="/static/urth_components/insight-viz-highcharts/chart-histogram.html">
+    <link rel="import" href="/static/urth_components/insight-viz-highcharts/chart-pie.html">
+    <link rel="import" href="/static/urth_components/insight-viz-highcharts/chart-highcharts-control-node.html">
+    <link rel="import" href="/static/urth_components/insight-viz-highcharts/chart-time-line.html">
+    <link rel="import" href="/static/urth_components/insight-viz-general/insight-viz-general.html">
+    <link rel="import" href="/static/urth_components/insight-viz-control/insight-viz-control.html">
+
+    <style>
+        body {
+            padding-top: 80px;
+        }
+       
+		.navbar{
+			height:80px;
+	    		display:flex;
+	    		background:url("/static/image/header-bk.png")  repeat;
+	    }
+	    .logo{
+			flex: 0 0 240px;
+			padding-top: 15px;
+			padding-left:60px;
+		} 
+	    .control-right{
+	    		height:100%;
+	    		flex:1;
+	    		display:flex;
+	    }
+        .insight-viz-chart {
+            float: left;
+            min-height: 600px !important;
+            margin-bottom: 20px;
+        }
+
+        button {
+            outline-style: none;
+            border-radius: 5px;
+            border: 0px;
+            border: 1px solid rgba(7,17,27,0.1);
+        }
+        .tables td {
+            border-bottom: 1px solid #000;
+            border-right: 1px solid #000;
+        }
+
+        .chartData button {
+            width: 150px;
+            height: 40px;
+        }
+
+        .chartData {
+            position: relative;
+            margin-top:40px;
+            padding-left: 60px;
+        }
+
+        .ageBox,.genderBox {
+            width: 100%;
+            position: absolute;
+            left: 0px;
+            top: 45px;
+        }
+         .ageBox{
+         	left: -10000px;
+         }
+        .content{
+        		display:flex;
+        }
+       .main-right{
+        		flex:1;
+        }
+        .main-right .title{
+        		height:40px;
+        		line-height:40px;
+        		display:flex;
+        		text-align:center;
+        		margin-top:-5px;
+        		margin-bottom: 8px;
+        		border-bottom:1px solid rgba(7,17,27,0.1);
+        }
+        .main-right .title .desc,.main-right .title .caseCount{
+        		flex:1;
+        }
+        .sidebar-left{
+        		flex: 0 0 260px;
+        }
+        .filtercontral{
+        		display:flex;
+        		
+        }
+        .filtercontral .cludeCon{
+        		flex:0 0 40px;
+        		padding: 0 10px 0 20px;
+        		box-sizing:border-box;
+        		height:100%;
+        		line-height:20px;
+        }
+         .filtercontral .cludeCon button{
+         	height:50%;
+         	line-height:50%;
+         	font-size:12px;
+         	width: 100%;
+         }
+		.filtercontral .cludeCon button:hover{
+			background:rgba(7,17,27,0.1)
+		}
+		#help-left ul{
+			list-style:none;
+			padding:0px;
+		}
+		#help-left ul li a{
+			width:100%;
+			text-align:center;
+			cursor: pointer;
+			color: #333;
+		}
+		#help-left ul li:nth-child(1) a{
+			background:rgba(7,17,27,0.1);
+		}
+    </style>
+</head>
+
+<body>
+	<nav class="navbar navbar-inverse navbar-fixed-top">
+        <div class="logo clearfix">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#">InsightViz Gallery</a>
+            </div>
+	    </div>
+	 </nav>
+	 <div class="content">
+	 	  <div class="sidebar-left">
+	 	  	<viz-general></viz-general>
+	 	  </div>
+	 	  <div class="main-right">
+	 	  		 <main class="container-fluid">
+			        case
+			    </main>
+			    <!-- /.container -->
+	 	  </div>
+	</div>
+</body>
+<script>
+</script>
+
+</html>

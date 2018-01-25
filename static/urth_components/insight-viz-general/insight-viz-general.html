@@ -1,0 +1,106 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<dom-module id="viz-general">
+    <template>
+        <style>
+             :host {
+                width: 260px;
+                display: block;
+                float: left;
+                background-color: rgba(7,17,27,0.3);
+                overflow: auto;
+                position: fixed;
+                left: 0px;
+                height: 100%;
+                top: 70px;
+                z-index: 40;
+            }
+            #conter {
+                margin: auto;
+            }
+            #help-left {
+                width: 100%;
+                font-family: "Open Sans",arial,x-locale-body,sans-serif;
+                float: left;
+            }
+        </style>
+        <div id="conter"  class="clearfix">
+            <div id="help-left"></div>
+        </div>
+    </template>
+    <script>
+        Polymer({
+            is: "viz-general",
+            ready: function () {
+                $.ajax({
+                    type: "get",
+                    url: "/static/_data/sidebar-chartlist.json",
+                    success: function (data) {
+                        var menuStr = '';
+                        $(data).each(function (i, v) {
+                            var vChildStr = '<ul>';
+                            $(v.children).each(function (i, vChild) {
+                                var vGrandsonStr = '<ul>'
+                                if (vChild.children) {
+                                    $(vChild.children).each(function (i, vGrandson) {
+                                        if (vGrandson.links.length > 1) {
+                                            var vGrandsonLinksStr = '';
+                                            for (var i = 0; i < vGrandson.links.length; i++) {
+                                                vGrandsonLinksStr += vGrandson.links[i] + ";";
+                                            }
+                                            vGrandsonStr += '<li class="grandson" src="' + vGrandsonLinksStr + '">' + vGrandson.id + "  " + vGrandson.name + '</li>'
+                                        } else {
+                                            vGrandsonStr += '<li class="grandson" src="' + vGrandson.links[0] + '">' + vGrandson.id + "  " + vGrandson.name + '</li>';
+                                        }
+                                    })
+                                    vGrandsonStr += '</ul>'
+                                    vChildStr += '<li data-show="1" class="vChildTitle"><span class="icon">+</span><p>' + vChild.id + "  " + vChild.name + '</p></li><div class="cGrandsonCon">' + vGrandsonStr + '</div>';
+                                } else {
+                                    if (vChild.links.length > 1) {
+                                        var vChildLinksStr = '';
+                                        for (var i = 0; i < vChild.links.length; i++) {
+                                            vChildLinksStr += vChild.links[i] + ";";
+                                        }
+                                        vChildStr += '<li class="child" data-show="0"><a href="'+vChild.links+'">' + vChild.id + "  " + vChild.name + '</a></li>';
+                                    } else {
+                                        vChildStr += '<li class="child" data-show="0"><a href="'+vChild.links+'">' + vChild.id + "  " + vChild.name + '</a></li>';
+                                    }
+                                }
+                            });
+                            vChildStr += '</ul>'
+                            if(i==data.length-1){
+                           	 	menuStr += '<div class="mainTitle" data-index="' + i + '" style="height: 40px;line-height: 40px;text-indent: 10px;font-weight: 700;cursor: pointer;"><span class="icon">-</span>' + v.id + " " + v.name + '</div><div class="subTitle" style="padding-left:30px;">' + vChildStr + '<div style="height:60px;"></div></div>';
+                            }else{
+                            		menuStr += '<div class="mainTitle" data-index="' + i + '" style="height: 40px;line-height: 40px;text-indent: 10px;font-weight: 700;cursor: pointer;"><span class="icon">-</span>' + v.id + " " + v.name + '</div><div class="subTitle" style="padding-left:30px;">' + vChildStr + '</div>';
+                            }
+                            
+                        });
+                        $("#help-left").html(menuStr);
+                        $(".vChildTitle").each(function (i, v) {
+                            $(v).attr("index", i);
+                        })
+                        $(".subTitle>ul>li").css({
+                            "cursoe": "pointer"
+                        })
+                        $(".mainTitle").click(function () {
+                            var thisIndex = parseInt($(this).attr("data-index"));
+                            $(".subTitle").eq(thisIndex).stop().slideToggle(1000);
+                            $(this).children().text() == "-" ? $(this).children().text("+") : $(this).children().text("-");
+                        });
+                        $(".child,.grandson").each(function (i, v) {
+                            $(v).on("click", function () {
+                                $(".child,.grandson").removeClass("clickColor")
+                                $(this).addClass("clickColor");
+                            })
+                        })
+                    },
+                    err: function () {
+                    }
+                })
+            }
+        })
+    </script>
+
+
+
+</dom-module>

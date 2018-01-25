@@ -1,0 +1,168 @@
+﻿<script src="../requirejs/require.js"></script>  
+<script type="text/javascript">
+require.config({paths: {d3: "../urth_components/d3/d3"}});
+
+require(["d3"], function(d3) {
+  this.d3 = d3;
+});
+</script>   
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+
+<dom-module id="viz-chart-highcharts-rose">
+    <template>
+        <style>
+            .phenotype {
+                margin-bottom: 20px;
+                margin-left: 20px;
+                text-align:center;
+                width:85%;
+            }
+
+            .feature_label {
+                padding: 2px 5px;
+                border-radius: 4px;
+                color: #fff;
+                font-size: 12px;
+                margin:5px;
+            }
+
+            .feature_low {
+                background-color: green;
+            }
+
+            .feature_high {
+                background-color: red;
+            }
+        </style>
+        <iframe id="chart"></iframe>
+        <div id="customDiv" class="phenotype">
+        </div>
+    </template>
+    <script>
+        'use strict';
+        Polymer({
+            is: "viz-chart-highcharts-rose",
+            ready: function() {
+                this.scopeSubtree(this.$.customDiv, true);
+            },
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readOnly: true,
+                    value: {  // default value to show user some debug information
+                        chart: {
+                            polar: true,
+                            type: 'line'
+                        },
+                        pane: {
+                            size: '60%',
+                            startAngle: 0,
+                            endAngle: 360
+                        },
+                        credits: false,
+                        title: {},
+                        subtitle: {},
+                        xAxis: {
+                            categories: [],
+                            tickmarkPlacement: 'on',
+                            lineWidth: 0,
+                            labels: {
+                                style: {
+                                    fontSize: '12px'
+                                }
+                            }
+                        },
+                        yAxis: {
+                            lineWidth: 0,
+                            endOnTick: false,
+                            tickPositions: [0, 10, 75, 100],
+                            labels: {
+                                enabled: false
+                            },
+                            min: 0,
+                            max: 100
+                        },
+                        legend: {
+                            enabled: false
+                        },
+                        tooltip: {
+                            shared: true,
+                            pointFormat: '<span style=\"color:{series.color}\">{series.name}: <b>{point.y}%</b><br/>'
+                        },
+                        series: [{
+                            name: 'Percentage(%)',
+                            type: 'column',
+                            data: [[],[],[]],
+                            pointPlacement: 'on',
+                            colorByPoint: true
+                        }]
+                    }//value of default options
+                }//defaultOptions
+            },//properties
+
+            _updateData: function (data) {
+                var index = parseInt(this.id.substr(1));
+                var series = [{
+                    name: 'Percentage(%)',
+                    type: 'column',
+                    pointPlacement: 'on',
+                    colorByPoint: true,
+                    data: []
+                }];
+                var outcome = "";
+                var total = "";
+                var seriesData = [];
+                var categories = [];
+                for (var i = 0; i < data.columns.length; i++) {
+                    if(data.columns[i] == "POS_OUTCOME"){
+                        outcome = data.data[index][i];
+                    } else if(data.columns[i] == "TOTAL"){
+                        total = data.data[index][i];
+                    } else {
+                        seriesData.push(data.data[index][i]);
+                        categories.push(data.columns[i]);
+                    }
+                }
+                var positiveInnerHTML = "";
+                var minusInnerHTML = "";
+                for (var i = 0; i < seriesData.length; i++) {
+                    var absvalue = +seriesData[i];
+                    var value = Math.round((absvalue / total) * 1000) / 10;
+
+                    if(value > 90){
+                        positiveInnerHTML += "<span class=\"feature_label feature_high\">"+categories[i]+"</span>";
+                    }
+                    if(value < 10){
+                        minusInnerHTML += "<span class=\"feature_label feature_low\">"+categories[i]+"</span>";
+                    }
+                    var color = d3.interpolateHsl('#008000', '#FF0000')(value / 100);
+                    series[0].data.push({ "y": value, "color": color });
+                }
+                this.$$("#customDiv").innerHTML = positiveInnerHTML + "</br>" + minusInnerHTML;
+                var options = {
+                    xAxis: {
+                        categories: categories
+                    },
+                    title: {
+                        text: 'Group ' + data.index[index] + ': ' + total
+                    },
+                    subtitle: {
+                        useHTML: true,
+                        text: 'Outcome occurrence rate: <b>' +
+                        Math.round((outcome / total) * 1000) / 10 + '%</b>'
+                    }
+                };
+                options['series'] = series;
+                return options;
+            }
+        })
+            ;
+    </script>
+</dom-module>

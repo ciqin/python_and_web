@@ -1,0 +1,96 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-highcharts.html">
+
+<dom-module id="viz-chart-highcharts-time-series">
+    <template>
+        <iframe id="chart"></iframe>
+    </template>
+
+    <script>
+        'use strict';
+        Polymer({
+            is: "viz-chart-highcharts-time-series",
+            behaviors: [
+                InsightVizBehaviors.BasicBehavior,
+                InsightVizBehaviors.HighChartsBehavior,
+                InsightVizBehaviors.LoadDataBehavior
+            ],
+            properties: {
+                defaultOptions: {
+                    type: Object, readonly: true,
+                    value: {
+                        chart: {
+                            zoomType: 'x'
+                        },
+                        xAxis: {
+                            type: 'datetime'
+                        },
+                        yAxis: {
+                            title: {
+                                text: '# of Encounters'
+                            },
+                            min: 0,
+                            max: 80
+                        },
+                        legend: {
+                            enabled: false
+                        },
+                        plotOptions: {
+                            area: {
+                                fillColor: {
+                                    linearGradient: {
+                                        x1: 0,
+                                        y1: 0,
+                                        x2: 0,
+                                        y2: 1
+                                    },
+                                    stops: [
+                                        [0, "#7cb5ec"],
+                                        [1, "rgba(124,281,236,0)"]
+                                    ]
+                                },
+                                marker: {
+                                    radius: 2
+                                },
+                                tooltip: {
+                                    headerFormat: '<b>{point.x:%Y/%m/%d}</b><br>',
+                                    pointFormat: '# of Encounters: {point.y}'
+                                },
+                                lineWidth: 1,
+                                states: {
+                                    hover: {
+                                        lineWidth: 1
+                                    }
+                                },
+                                threshold: null
+                            }
+                        },
+                        credits: false,
+                        series: [{
+                            type: 'area',
+                            name: '# of Encounters',
+                            data: []
+                        }]
+                    }//default value
+                }//defaultOptions
+            },//properties
+
+            _updateData: function (data) {
+                var seriesData = [];
+                for(var i = 0; i < data.index.length; i++) {
+                    var groupsData = [];
+                    groupsData.push(Date.UTC(data.data[i][0].substring(0,10).split("-")[0],data.data[i][0].substring(0,10).split("-")[1]-1,data.data[i][0].substring(0,10).split("-")[2]));
+                    groupsData.push(data.data[i][1]);
+                    seriesData.push(groupsData);
+                }
+                return [{
+                    type: 'area',
+                    name: '# of Encounters',
+                    data: seriesData,
+                }];
+            }
+        })
+        ;
+    </script>
+</dom-module>

@@ -1,0 +1,32 @@
+<script src="../requirejs/require.js"></script>
+
+<script>
+  var InsightVizBehaviors = InsightVizBehaviors || {};
+  (function () {
+    'use strict';
+    var requireConfigured;
+    InsightVizBehaviors.D3Behavior = {
+      properties: {
+        width: {type: String, value: "800px"},
+        height: {type: String, value: "800px"}
+      },//props
+      created: function () {
+        if (!requireConfigured) {
+          requirejs.config({
+            paths: {
+              d3: this.resolveUrl('../d3/d3.min')
+            }
+          });
+          requireConfigured = true;
+        }
+      },//function created
+      ready: function () {
+        var that = this;
+        require(['d3', 'jquery'], function (d3, $) {
+          var container = that.container = that.$.chart;
+          //d3.select(container).append("h1").text("Successfully loaded D3 version " + d3.version);
+        });//require
+      }//function ready
+    };
+  })();
+</script>

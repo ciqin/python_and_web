@@ -1,0 +1,36 @@
+{
+  "name": "insight-viz-general",
+  "description": "General WebComponents to visualize common widgets in and out Jupyter Notebook such as sidebar, navbar",
+  "keywords": [
+    "insight-viz",
+    "visualization",
+    "web-components",
+    "declarativewidgets"
+  ],
+  "ignore": [
+    "README.md",
+    "**/.*"
+  ],
+  "dependencies": {
+    "polymer": "~1.5",
+    "requirejs": "^2",
+    "jquery": "^3"
+  },
+  "resolution": {
+    "webcomponentsjs": "~0.7"
+  },
+  "private": true,
+  "license": "Copyright (c) IBM 2016",
+  "homepage": "https://github.ibm.com/InsightFactory/insight-viz",
+  "authors": [
+    "Bibo Hao <haobibo@cn.ibm.com>"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.ibm.com/InsightFactory/insight-viz.git"
+  },
+  "_source": "/Users/healthcare/Desktop/insight-viz/insight-viz-general",
+  "_target": "*",
+  "_originalSource": "./insight-viz-general",
+  "_direct": true
+}

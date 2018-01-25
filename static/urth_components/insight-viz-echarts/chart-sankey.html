@@ -1,0 +1,94 @@
+﻿<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-echarts.html">
+
+<dom-module id="viz-chart-sankey">
+  <template>
+    <div id="chart"></div>
+  </template>
+
+  <script>
+    Polymer({
+      is: "viz-chart-sankey",
+      behaviors: [
+        InsightVizBehaviors.BasicBehavior,
+        InsightVizBehaviors.EChartsBehavior,
+        InsightVizBehaviors.LoadDataBehavior
+      ],
+      properties: {
+        defaultOptions: {
+          type: Object, 
+		      readonly: true,
+          value: {
+            tooltip: {
+              trigger: 'item',
+              triggerOn: 'mousemove'
+            },
+            series: [
+              {
+              type: 'sankey',
+              layout: 'none',
+              data: [],
+              links: [],
+                itemStyle: {
+                    normal: {
+                        borderWidth: 1,
+                        borderColor: '#aaa'
+                    }
+                },
+                lineStyle: {
+                    normal: {
+                        color: 'source',
+                        curveness: 0.5
+                    }
+                }
+				      }
+			      ]
+          }//default value
+        }//defaultOptions
+      },//properties
+	  
+  	  _updateData: function (data) {
+        var nodesArray = [];
+        for (var i = 0; i < data.data.length; i++) {
+          for (var j = 0; j < data.data[i].length-1; j++) {
+            nodesArray.push(data.data[i][j]);
+          }
+        }
+        var nodes = Array.from(new Set(nodesArray.map(function(d){return d})));
+        var nodesData = [];
+        for (var i = 0; i < nodes.length; i++) {
+          var nodesElement = {"name":nodes[i]};
+          nodesData.push(nodesElement);
+        }
+        var linksData = [];
+        for (var i = 0; i < data.data.length; i++) {   
+          var linksElement = {"source":data.data[i][0],"target":data.data[i][1],"value":data.data[i][2]};
+          linksData.push(linksElement);
+        }    
+        var options = {};
+        options['series'] = [
+          {
+            type: 'sankey',
+            layout: 'none',
+            data: nodesData,
+            links: linksData,
+            itemStyle: {
+              normal: {
+                borderWidth: 1,
+                borderColor: '#aaa'
+              }
+            },
+            lineStyle: {
+              normal: {
+                color: 'source',
+                curveness: 0.5
+              }
+            }
+          }
+        ];
+        return options;
+  	  }
+    });
+  </script>
+</dom-module>

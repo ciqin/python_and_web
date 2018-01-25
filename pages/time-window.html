@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Insight-Viz Charts Gallery</title>
+    <script src="/static/urth_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="/static/urth_components/jquery/dist/jquery.min.js"></script>
+    <script src="/static/urth_components/bootstrap/dist/js/bootstrap.min.js"></script>
+    <link href="/static/urth_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="import" href="/static/urth_components/insight-viz-highcharts/chart-highcharts-control-node.html">
+    <link rel="import" href="/static/urth_components/insight-viz-highcharts/chart-days.html">
+    <link rel="import" href="/static/urth_components/insight-viz-general/insight-viz-general.html">
+    <link rel="import" href="/static/urth_components/insight-viz-control/insight-viz-control.html">
+    <style>
+        body {
+            padding-top: 80px;
+        }
+		 /* nav and control start*/
+		.navbar{
+			height:80px;
+	    		display:flex;
+	    		background:url("/static/image/header-bk.png")  repeat;
+	    }
+	     .navbar select {
+	     	  height:30px;
+	     	  color:#ccc;
+	     	  line-height:30px;
+			  border: solid 1px #000;
+			  background: rgba(57,55,55,1) ;
+			  padding-right: 14px;
+		 }
+		 .navbar select::-ms-expand { display: none; }
+		.logo{
+			flex: 0 0 240px;
+			padding-top: 15px;
+			padding-left:60px;
+		} 
+	    .control-right{
+	    		height:100%;
+	    		flex:1;
+	    		display:flex;
+	    }
+	    .control-right .title,.control-right .filter{
+	    		flex:1;
+	    		line-height:40px;
+	    		color:#fff;
+	    }
+	     .control-right .filter .btn{
+	    		background: rgb(133, 185, 122);
+	    }
+	    .control-right .filter{
+	    		line-height:79px;
+	    }
+	    .control-right .control-box,.control-right .gender{
+	    		flex:2;
+	    		line-height:79px;
+	    }
+	    .control-right .control-box .control-receptacle{
+	    		height:100%;
+	    		width:100%;
+	    }
+	    .prompt{
+	    		color:#fff;
+	    		font-size:12px;
+	    }
+	    /* nav and control end*/
+
+        .insight-viz-chart {
+            float: left;
+            margin-bottom: 20px;
+        }
+       
+        button {
+            outline-style: none;
+            border-radius: 5px;
+            border: 0px;
+            border: 1px solid rgba(7,17,27,0.1);
+        }
+        .tables td {
+            border-bottom: 1px solid #000;
+            border-right: 1px solid #000;
+        }
+
+        .chartData button {
+            width: 150px;
+            height: 40px;
+        }
+
+        .chartData {
+            position: relative;
+            margin-top:40px;
+            padding-left: 60px;
+        }
+
+        .ageBox，.genderBox {
+            width: 100%;
+            position: absolute;
+            left: 0px;
+            top: 45px;
+        }
+         .genderBox{
+         	left: -1000px;
+         }
+        .filtercontral{
+        		width:100%;
+        		height:40px;
+        		margin-bottom:10px;
+        		line-height:40px;
+        		display:flex;
+        		font-size:16px;
+        		margin-top:-5px;
+        		padding:0 10px;
+        }
+        .desc,.titlebox .caseCount{
+        		flex:1;
+        }
+        .filtercontral .filterBox{
+        		flex:1;
+        		padding-left: 80px;
+        		display:flex;
+        }
+        .filterBox .ageType, .filterBox .filterSelect, .filterBox .filterBtn{
+        		flex:1;
+        		display:inline-block;
+        		vertical-align:top;
+        }
+        .filterBox .filterSelect{
+        		flex:1;
+        }
+        .filterBox .filterBtn,.filterBox .ageType{
+        		height:100%;
+        		flex:1;
+        }
+        .filterBox .ageType,.titlebox .filterBtn{
+        		margin-top:-2px;
+        }
+        .ageType .startEnter,.ageType .endEnter{
+        		width:30%;
+        		height:100%;
+        		border-radius:2px;
+        		outline:none;
+        		font-size:12px;
+        		text-align:center;
+        		height:60%;
+        }
+        .filterBtn .btn{
+        		height: 60%;
+   			line-height: 60%;
+        		text-align:center;
+        		display:inline-block;
+        		outline:none;
+        		border:1px solid rgba(7,17,27,0.1);
+        		border-radius:2px;
+        }
+        .content{
+        		display:flex;
+        		overflow-x:hidden;
+        }
+       .main-right{
+        		flex:1;
+        }
+        .main-right .title{
+        		height:40px;
+        		line-height:40px;
+        		display:flex;
+        		text-align:center;
+        		margin-top:-5px;
+        		margin-bottom: 8px;
+        		border-bottom:1px solid rgba(7,17,27,0.1);
+        }
+        .main-right .title .desc,.main-right .title .caseCount{
+        		flex:1;
+        }
+        .sidebar-left{
+        		flex: 0 0 280px;
+        }
+        .filtercontral{
+        		display:flex;
+        }
+        .filtercontral .cludeCon{
+        		flex:0 0 40px;
+        		padding: 0 10px 0 20px;
+        		box-sizing:border-box;
+        		height:100%;
+        		line-height:20px;
+        }
+         .filtercontral .cludeCon button{
+         	height:50%;
+         	line-height:50%;
+         	font-size:12px;
+         	width: 100%;
+         }
+		.filtercontral .cludeCon button:hover{
+			background:rgba(7,17,27,0.1)
+		}
+		#help-left ul{
+			list-style:none;
+			padding:0px;
+		}
+		#help-left ul li a{
+			width:100%;
+			text-align:center;
+			cursor: pointer;
+			color: #333;
+		}
+		#help-left ul li:nth-child(1) a{
+			background:rgba(7,17,27,0.1);
+		}
+		
+    </style>
+</head>
+
+<body>
+	<nav class="navbar navbar-inverse navbar-fixed-top">
+        <div class="logo clearfix">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#">InsightViz Gallery</a>
+            </div>
+	    </div>
+	    <div class="control-right">
+	    		<div class="title">
+			        	<div class="desc"><span>Select Original Cohrt:</span></div>
+					<div class="caseCount">
+						<span>Total cases:</span>
+						<span>12345</span>
+					</div>
+					
+			</div>
+            <div class="gender">
+            		<span class="prompt">请选择类型</span>
+			   <select> 
+				      <option>Event</option>
+					  <option>1</option>
+			  		  <option>2</option>
+			  </select> 
+            </div>
+			<div class="filter">
+					<button class="btn">filter</button>
+			</div>
+	     </div>
+	 </nav>
+	 <div class="content">
+	 	  <div class="sidebar-left">
+	 	  	<viz-general></viz-general>
+	 	  </div>
+	 	  <div class="main-right">
+	 	  		 <main class="container-fluid">
+			        <div class="row">
+			            <div class="col-md-6">
+			            		<div class="chart-time clearfix">
+			                     <viz-chart-highcharts-days id='p1' class='insight-viz-chart col-md-12' options-title-text='Cohort Time Window Selection Definition'  options-subtitle-text='Click and drag in the plot area to zoom in'  height="650px" src-bind='event'  src-url='//localhost:8001/{bind}?event=496'>
+						          </viz-chart-highcharts-days>
+			                </div>
+			            </div>
+			            <div class="col-md-6">
+			                <viz-chart-highcharts-flow id='g2' class='insight-viz-chart col-md-12' height="600px" src-bind='count' src-url='//localhost:8001/{bind}'>
+			                </viz-chart-highcharts-flow>
+			            </div>
+			        </div>
+			    </main>
+			    <!-- /.container -->
+	 	  </div>
+	</div>
+</body>
+<script>
+    var g2 = document.getElementById("g2");
+    var p1 = document.getElementById("p1");
+    $(".filter .btn").click(function(){
+    		var event = $(".gender select").eq(0).val();
+    		$.ajax({
+				url:"//localhost:8001/event",
+				type:"get",
+			    data:{
+					event:event
+				}, 
+				success:function(data){
+					var list= JSON.parse(data)
+					var  data = {}; 
+					for(var i = 0; i < list.length; i++) {
+	    				    if(!data[list[i][1]]) {
+	    				        var arr = [];
+	    				        arr.push(list[i]);
+	    				        data[list[i][1]] = arr;
+	    				    }else {
+	    				        data[list[i][1]].push(list[i])
+	    				    }
+    					}
+	    				g2.properties.emilinate = list.length;
+	    				g2.__filter();
+	    				p1.properties.data =  data;
+	    				p1.properties.event = event;
+	    				p1.__filter_load();
+			  }
+		})
+    })
+    $.ajax({
+        url: "//localhost:8001/count",
+        type: "get",
+        success: function (data) {
+            $(".caseCount span")[1].innerHTML = JSON.parse(data).total_count;
+            var eventData =  JSON.parse(data).top20_events;
+            var envntStr= '<option>Event</option>';
+            eventData.forEach(function( v ,i ){
+            		envntStr+='<option>'+v+'</option>'
+            })
+            $(".gender select").eq(0).html(envntStr)
+        }
+    })
+</script>
+
+</html>

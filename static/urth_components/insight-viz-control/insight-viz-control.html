@@ -1,0 +1,156 @@
+<link rel="import" href="../insight-viz-base/viz-base-behavior-basic.html">
+<link rel="import" href="../insight-viz-base/viz-base-behavior-loaddata.html">
+<dom-module id="viz-control">
+    <template>
+        <style>
+        		:host{
+        			position:relative;
+        		}
+         	.control {
+            		height: 3px;
+				width: 160px;
+				background: rgba(134, 210, 245, 1);
+            		position:absolute;
+            		left: 10px;
+				top: 5px;
+            }
+            .control .bk{
+            		height:3px;
+            		width:10px;
+            		background:url("/static/image/header-bk.png") repeat;
+            		left:0;
+            		top:0;
+            }
+            .control .left-bk,.control .right-bk{
+            		position:absolute;
+            		top:0;
+            		background:#000;
+            		height:3px;
+            		width:0px;
+            }
+            .control .left-bk{
+            		left:10px;
+            }
+            .control .right-bk{
+            		
+            		right:0px;
+            }
+            .control .icon-left{
+            		position: absolute;
+            		top:0px;
+            }
+			.control .icon-left .round,.control .icon-right .round{
+				width: 20px;
+			    height: 20px;
+			    border-radius: 50% 50% 50% 0;
+			    background: #89849b;
+			    position: absolute;
+			    -webkit-transform: rotate(-45deg);
+			    -moz-transform: rotate(-45deg);
+			    -o-transform: rotate(-45deg);
+			    -ms-transform: rotate(-45deg);
+			    transform: rotate(-45deg);
+			    left: 0;
+			    top: -23px;
+			    z-index:2;
+			    cursor:pointer;
+			}
+			.control .icon-right .round{
+				left: 20px;
+			}
+			.control .icon-left .round .round-in,.control .icon-right .round .round-in{
+				width: 20px;
+			    height: 20px;
+			    font-size:12px;
+			    text-align:center;
+			    color:#fff;
+			    line-height:20px;
+			    position: absolute;
+			    -webkit-transform: rotate(45deg);
+			    -moz-transform: rotate(45deg);
+			    -o-transform: rotate(45deg);
+			    -ms-transform: rotate(45deg);
+			    transform: rotate(45deg);
+			    left: 0%;
+			    top: 0%;
+			}
+        </style>
+        <div class="control">
+        			<div class="bk"></div>
+        			<div class="left-bk"></div>
+            		<div class="icon-left">
+            			<span class="round">
+            				<span class="round-in">1</span>
+            			</span>
+            		</div>
+            		<div class="right-bk"></div>
+            		<div class="icon-right">
+            			<span class="round">
+            				<span class="round-in">1</span>
+            			</span>
+            		</div>
+       </div>
+    </template>
+    <script>
+        Polymer({
+            is: "viz-control",
+            properties: {
+            		movePosition:0
+            },
+            ready: function () {
+            		console.log(this.properties.min);
+            		$(".bk").css({"width":(10+34)+"px"})
+            		moveElement($(".icon-left .round"),$(".icon-left .round .round-in"),34,"L");
+				moveElement($(".icon-right .round"),$(".icon-right .round .round-in"),108,"R");
+				function moveElement(ele,childele,start,aspect){
+					ele.css({"left":start+"px"});
+					childele.html(start)
+					ele.mousedown(function(evt){
+						var that = $(this)[0];
+						var oldX = evt.clientX;
+						var left = parseInt(that.style.left);
+						var count = null;
+						if(aspect==="L"){
+							 var position = parseInt($(".icon-right .round-in").html())
+							 document.onmousemove = function(evt) {
+						            var x = evt.clientX - oldX;
+						            that.style.left = left + x + "px";
+						            if ( parseInt(that.style.left) < left) {
+						                that.style.left = left;
+						            }
+						            if (parseInt(that.style.left) > position) {
+						                that.style.left =position+ "px";
+						            }
+						            childele.html(parseInt(that.style.left));
+						            $(".control .left-bk").css({"width":left+x+"px"});
+						     }
+							
+						}else{
+							 var position = $(".icon-left .round-in").html()
+							 var width = parseInt($(".control .right-bk").css("width"));
+							 document.onmousemove = function(evt) {
+						            var x = evt.clientX - oldX;
+						            that.style.left = left + x + "px";
+						            if ( parseInt(that.style.left) < position) {
+						                that.style.left = position+"px";
+						            }
+						            if (parseInt(that.style.left) > 150) {
+						                that.style.left =start+ "px";
+						            }
+						            childele.html(parseInt(that.style.left));
+						            $(".control .right-bk").css({"width":-x+width+"px"});
+						     }
+						}
+						 document.onmouseup = function (evt) {
+					            document.onmouseup = null;
+					            document.onmousemove = null;
+					    }
+					})	
+				}
+            }
+        })
+    </script>
+
+
+
+</dom-module>

@@ -1,0 +1,38 @@
+{
+  "name": "insight-viz-d3",
+  "description": "D3 WebComponents to visualize data in and out Jupyter Notebook",
+  "keywords": [
+    "insight-viz",
+    "visualization",
+    "web-components",
+    "declarativewidgets",
+    "d3"
+  ],
+  "ignore": [
+    "README.md",
+    "**/.*"
+  ],
+  "dependencies": {
+    "polymer": "~1.5",
+    "requirejs": "^2",
+    "jquery": "^3",
+    "d3": "^3"
+  },
+  "resolution": {
+    "webcomponentsjs": "~0.7"
+  },
+  "private": true,
+  "license": "Copyright (c) IBM 2016",
+  "homepage": "https://github.ibm.com/InsightFactory/insight-viz",
+  "authors": [
+    "Bibo Hao <haobibo@cn.ibm.com>"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.ibm.com/InsightFactory/insight-viz.git"
+  },
+  "_source": "/Users/healthcare/Desktop/insight-viz/insight-viz-d3",
+  "_target": "*",
+  "_originalSource": "./insight-viz-d3",
+  "_direct": true
+}
