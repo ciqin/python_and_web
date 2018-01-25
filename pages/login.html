@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Signin Template for Bootstrap</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../static/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="../static/css/signin.css" rel="stylesheet">
+</head>
+
+<body class="text-center">
+    <div class="form-signin">
+        <h1 class="h3 mb-3 font-weight-normal">Please sign in</h1>
+        <input type="email" id="inputEmail" class="form-control" placeholder="Email address" >
+        <input type="password" id="inputPassword" class="form-control" placeholder="Password" >
+        <div class="checkbox mb-3">
+            <label>
+                <input type="checkbox" value="remember-me"> Remember me
+            </label>
+        </div>
+        <button class="btn btn-primary btn-block" id="btn">Sign in</button>
+    </div>
+</body>
+<script src="../static/jquery/dist/jquery.js"></script>
+<script> 
+    $("#btn").click(function () {
+        var email = $("#inputEmail").val();
+        var password = $("#inputPassword").val();
+        $.ajax({
+            url: "/inspect",
+            type: "get",
+            data: {
+                email: email,
+                password: password
+            },
+            success: function (data) {
+                if(data==='err'){
+                    alert('请正确输入用户名活密码')
+                }else{
+                    window.location.href='/login'
+                }
+            }
+        })
+    })
+    // bingga@cn.com 12345
+</script>
+
+</html>
